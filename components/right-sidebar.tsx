@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -80,7 +81,7 @@ export function RightSidebar() {
           <div className="flex -space-x-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <Avatar key={i} className="border-2 border-zinc-900 h-6 w-6">
-                <AvatarImage src={`/placeholder.svg?height=24&width=24&text=${i}`} />
+                <AvatarImage src={`/placeholder-icon.png?height=24&width=24&text=${i}`} />
                 <AvatarFallback>{i}</AvatarFallback>
               </Avatar>
             ))}
@@ -121,7 +122,7 @@ function TrendingTopic({
           <div className="flex -space-x-1">
             {[1, 2, 3].map((i) => (
               <Avatar key={i} className="border-2 border-zinc-800 h-5 w-5">
-                <AvatarImage src={`/placeholder.svg?height=20&width=20&text=${i}`} />
+                <AvatarImage src={`/text-holder.png?height=20&width=20&text=${i}`} />
                 <AvatarFallback>{i}</AvatarFallback>
               </Avatar>
             ))}
@@ -137,7 +138,7 @@ function TrendingTopic({
       </div>
       <div className="ml-3 relative">
         <div className="rounded-md w-16 h-16 overflow-hidden">
-          <img src={image || "/placeholder.svg"} alt={title} className="w-full h-full object-cover" />
+          <Image src={image || "/placeholder.svg"} alt={title} width={64} height={64} className="object-cover" />
         </div>
         {isNew && <div className="absolute top-1 right-1 h-2 w-2 bg-green-500 rounded-full"></div>}
       </div>

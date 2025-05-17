@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context"
 import { useRealtime } from "@/context/realtime-context"
 import { useSupabase } from "@/lib/supabase-provider"
 import { useSearchParams } from "next/navigation"
-import { Avatar } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
@@ -18,7 +18,8 @@ import {
   Smile,
   SendHorizontal,
   MoreVertical,
-  X
+  X,
+  Reply
 } from "lucide-react"
 import { 
   DropdownMenu, 
@@ -31,6 +32,7 @@ import { formatDistanceToNow } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import debounce from "lodash/debounce"
+import { cn } from "@/lib/utils"
 
 type Message = {
   id: string
@@ -67,7 +69,12 @@ type Topic = {
   }
 }
 
-export function TopicDetailRealtime({ topicId }: { topicId: string }) {
+type TopicDetailRealtimeProps = {
+  topicId: string
+  initialMessages?: Message[]
+}
+
+export function TopicDetailRealtime({ topicId, initialMessages = [] }: TopicDetailRealtimeProps) {
   const { fetchTopic, fetchMessages, createMessage, voteMessage, addReaction } = useTopics()
   const { user } = useAuth()
   const { supabase } = useSupabase()
@@ -77,7 +84,7 @@ export function TopicDetailRealtime({ topicId }: { topicId: string }) {
   const highlightedMessageId = searchParams.get("highlight")
   
   const [topic, setTopic] = useState<Topic | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [isLoading, setIsLoading] = useState(true)
   const [newMessage, setNewMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -612,7 +619,11 @@ export function TopicDetailRealtime({ topicId }: { topicId: string }) {
         alt={message.user.username}
         size="md"
         status={message.user.is_online ? "online" : "offline"}
-      />
+      >
+        <AvatarFallback>
+          {message.user.username.slice(0, 2).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -706,7 +717,10 @@ export function TopicDetailRealtime({ topicId }: { topicId: string }) {
             {message.reactions.map((reaction) => (
               <div
                 key={reaction.emoji}
-                className="flex items-center bg-neutral-800 rounded-full px-2 py-1 text-sm"
+                className={cn(
+                  "flex items-center bg-neutral-800 rounded-full px-2 py-1 text-sm",
+                  reaction.emoji === "👍" && user?.id === reaction.emoji && "bg-green-500 text-green-50"
+                )}
               >
                 <span className="mr-1">{reaction.emoji}</span>
                 <span className="text-xs">{reaction.count}</span>
@@ -728,67 +742,150 @@ export function TopicDetailRealtime({ topicId }: { topicId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Topic header */}
-      <div className="border-b border-gray-800 p-4">
-        <h1 className="text-2xl font-bold">{topic.title}</h1>
-        <p className="text-gray-400 mt-1">{topic.description}</p>
+      <div className="p-4 border-b border-gray-800">
+        <h1 className="text-2xl font-bold">{topic?.title}</h1>
+        <p className="text-gray-400 mt-1">{topic?.description}</p>
       </div>
-      
+
       {/* Messages container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <MessageSquare size={48} className="text-gray-500 mb-3" />
-            <h3 className="text-xl font-medium">No messages yet</h3>
-            <p className="text-gray-400 mt-1">Be the first to start the conversation!</p>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400" />
           </div>
         ) : (
           <>
-            {messages.map(message => renderMessage(message))}
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                id={message.id}
+                className={`flex gap-3 ${
+                  message.id === highlightedMessageId
+                    ? "bg-blue-900/20 rounded-lg p-2"
+                    : ""
+                }`}
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={message.user.avatar_url} />
+                  <AvatarFallback>
+                    {message.user.username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{message.user.username}</span>
+                    <span className="text-sm text-gray-400">
+                      {formatDistanceToNow(new Date(message.created_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+
+                  <div className="mt-1">
+                    {message.parent_id && (
+                      <div className="text-sm text-gray-400 mb-1">
+                        Replying to{" "}
+                        {messages.find((m) => m.id === message.parent_id)?.user
+                          .username || "Unknown"}
+                      </div>
+                    )}
+                    <p className="text-gray-200 whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                    {message.image_url && (
+                      <div className="mt-2">
+                        <img
+                          src={message.image_url}
+                          alt="Message attachment"
+                          className="max-w-sm rounded-lg"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reactions */}
+                  {message.reactions && message.reactions.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {Object.entries(
+                        message.reactions.reduce((acc, reaction) => {
+                          acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1
+                          return acc
+                        }, {} as Record<string, number>)
+                      ).map(([emoji, count]) => (
+                        <div
+                          key={emoji}
+                          className="flex items-center gap-1 bg-gray-800 rounded-full px-2 py-1 text-sm"
+                        >
+                          <span>{emoji}</span>
+                          <span className="text-gray-400">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Message actions */}
+                  <div className="flex items-center gap-4 mt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleVote(message.id, true)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <ArrowUp className="h-4 w-4 mr-1" />
+                      {message.upvotes || 0}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleVote(message.id, false)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <ArrowDown className="h-4 w-4 mr-1" />
+                      {message.downvotes || 0}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setReplyTo(message)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <Reply className="h-4 w-4 mr-1" />
+                      Reply
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowEmojiPicker(message.id)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <Smile className="h-4 w-4 mr-1" />
+                      React
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
             <div ref={messagesEndRef} />
           </>
         )}
       </div>
-      
+
       {/* Typing indicator */}
       {typingUsers.length > 0 && (
-        <div className="px-4 py-1 text-sm text-gray-400">
-          {typingUsers.length === 1 
-            ? `${typingUsers[0]} is typing...`
-            : typingUsers.length === 2
-              ? `${typingUsers[0]} and ${typingUsers[1]} are typing...`
-              : `${typingUsers[0]} and ${typingUsers.length - 1} others are typing...`
-          }
+        <div className="px-4 py-2 text-sm text-gray-400">
+          {typingUsers.map((user) => user.username).join(", ")} typing...
         </div>
       )}
-      
-      {/* Reply indicator */}
-      {replyTo && (
-        <div className="px-4 py-2 flex items-center justify-between bg-neutral-800">
-          <div className="flex items-center">
-            <MessageSquare size={16} className="text-blue-400 mr-2" />
-            <span className="text-sm">
-              Replying to <span className="font-medium">{replyTo.user.username}</span>
-            </span>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-6 w-6" 
-            onClick={() => setReplyTo(null)}
-          >
-            <X size={14} />
-          </Button>
-        </div>
-      )}
-      
+
       {/* Message form */}
       <form onSubmit={handleSubmit} className="p-4 border-t border-gray-800">
         {imagePreview && (
           <div className="mb-3 relative inline-block">
-            <img 
-              src={imagePreview} 
-              alt="Preview" 
-              className="max-h-40 rounded-md"
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="max-h-32 rounded-lg"
             />
             <Button
               variant="destructive"
@@ -797,82 +894,83 @@ export function TopicDetailRealtime({ topicId }: { topicId: string }) {
               onClick={clearImageSelection}
               type="button"
             >
-              <X size={14} />
+              <X className="h-4 w-4" />
             </Button>
           </div>
         )}
-        
-        <div className="flex items-end gap-2">
-          <Textarea
-            value={newMessage}
-            onChange={handleMessageChange}
-            placeholder={replyTo ? `Reply to ${replyTo.user.username}...` : "Type a message..."}
-            className="min-h-[100px] bg-neutral-800 border-gray-700 resize-none"
-          />
-          
+
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Textarea
+              value={newMessage}
+              onChange={handleMessageChange}
+              placeholder={replyTo ? `Reply to ${replyTo.user.username}...` : "Type a message..."}
+              className="min-h-[100px] bg-neutral-800 border-gray-700 resize-none"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute bottom-2 right-2"
+              onClick={() => setShowEmojiPicker(true)}
+            >
+              <Smile className="h-4 w-4" />
+            </Button>
+          </div>
+
           <div className="flex flex-col gap-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="rounded-full"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingImage}
             >
-              <ImageIcon size={20} />
+              <ImageIcon className="h-4 w-4" />
             </Button>
-            
             <input
-              type="file"
               ref={fileInputRef}
-              className="hidden"
+              type="file"
               accept="image/*"
+              className="hidden"
               onChange={handleImageSelect}
             />
-            
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={() => setShowEmojiPicker(true)}
-            >
-              <Smile size={20} />
-            </Button>
-            
-            <Button
-              type="submit"
-              size="icon"
-              className="rounded-full"
-              disabled={isSubmitting || isUploadingImage || (!newMessage.trim() && !imageFile)}
-            >
-              <SendHorizontal size={20} />
+            <Button type="submit" disabled={isSubmitting || isUploadingImage}>
+              {isSubmitting || isUploadingImage ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              ) : (
+                <SendHorizontal className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
+
+        {replyTo && (
+          <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
+            <span>Replying to {replyTo.user.username}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setReplyTo(null)}
+              className="h-6 px-2"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
       </form>
-      
+
       {/* Emoji picker */}
       {showEmojiPicker && (
         <div 
           className="absolute bottom-[170px] right-4 z-50"
-          onClick={e => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-1 right-1 h-6 w-6 bg-neutral-700 z-10"
-              onClick={() => setShowEmojiPicker(false)}
-            >
-              <X size={14} />
-            </Button>
             <EmojiPicker
               onEmojiClick={handleEmojiSelect}
-              skinTonesDisabled
-              searchDisabled={false}
               width={300}
               height={400}
-              theme="dark"
             />
           </div>
         </div>

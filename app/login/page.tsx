@@ -11,8 +11,13 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { useAuth } from "@/context/auth-context"
+import { supabase } from "@/lib/supabase"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Login() {
+  const { signIn } = useAuth()
+  const { toast } = useToast()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -34,17 +39,26 @@ export default function Login() {
   }
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     setIsLoading(true)
 
-    // Simulate API call for login
-    setTimeout(() => {
-      console.log("Login data:", formData)
+    try {
+      await signIn(formData.email, formData.password)
+      toast({
+        title: "Success",
+        description: "You have been signed in",
+      })
+    } catch (error: any) {
+      console.error("Error signing in:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign in",
+        variant: "destructive",
+      })
+    } finally {
       setIsLoading(false)
-      router.push("/")
-    }, 1500)
+    }
   }
 
   return (
@@ -154,6 +168,24 @@ export default function Login() {
               type="button"
               variant="outline"
               className="w-full bg-zinc-800/80 border-zinc-700/50 text-white hover:bg-zinc-800 py-6 rounded-lg"
+              onClick={async () => {
+                try {
+                  const { error } = await supabase.auth.signInWithOAuth({
+                    provider: "google",
+                    options: {
+                      redirectTo: `${window.location.origin}/auth/callback`,
+                    },
+                  })
+                  if (error) throw error
+                } catch (error) {
+                  console.error("Error signing in with Google:", error)
+                  toast({
+                    title: "Error",
+                    description: "Failed to sign in with Google",
+                    variant: "destructive",
+                  })
+                }
+              }}
             >
               <svg className="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path

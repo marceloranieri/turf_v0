@@ -29,8 +29,7 @@ export async function POST(request: Request) {
         
         -- Add indexes for performance
         CREATE INDEX IF NOT EXISTS idx_user_interests_user_id ON user_interests(user_id);
-        CREATE INDEX IF NOT EXISTS idx_user_interests_category ON 
-user_interests(interest_category);
+        CREATE INDEX IF NOT EXISTS idx_user_interests_category ON user_interests(interest_category);
       `,
     })
 
@@ -59,10 +58,8 @@ user_interests(interest_category);
         );
         
         -- Add indexes for performance
-        CREATE INDEX IF NOT EXISTS idx_user_achievements_user_id ON 
-user_achievements(user_id);
-        CREATE INDEX IF NOT EXISTS idx_user_achievements_completed ON 
-user_achievements(completed);
+        CREATE INDEX IF NOT EXISTS idx_user_achievements_user_id ON user_achievements(user_id);
+        CREATE INDEX IF NOT EXISTS idx_user_achievements_completed ON user_achievements(completed);
       `,
     })
 
@@ -87,8 +84,7 @@ user_achievements(completed);
         -- Add indexes for performance
         CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
         CREATE INDEX IF NOT EXISTS idx_reports_reporter_id ON reports(reporter_id);
-        CREATE INDEX IF NOT EXISTS idx_reports_reported_user_id ON 
-reports(reported_user_id);
+        CREATE INDEX IF NOT EXISTS idx_reports_reported_user_id ON reports(reported_user_id);
       `,
     })
 
@@ -201,29 +197,25 @@ reports(reported_user_id);
         ALTER TABLE user_interests ENABLE ROW LEVEL SECURITY;
         
         -- Create policy for user_interests
-        DROP POLICY IF EXISTS "Allow users to read their own interests" ON 
-user_interests;
+        DROP POLICY IF EXISTS "Allow users to read their own interests" ON user_interests;
         CREATE POLICY "Allow users to read their own interests" 
           ON user_interests FOR SELECT 
           TO authenticated 
           USING (auth.uid() = user_id);
           
-        DROP POLICY IF EXISTS "Allow authenticated users to insert their own interests" 
-ON user_interests;
+        DROP POLICY IF EXISTS "Allow authenticated users to insert their own interests" ON user_interests;
         CREATE POLICY "Allow authenticated users to insert their own interests" 
           ON user_interests FOR INSERT 
           TO authenticated 
           WITH CHECK (auth.uid() = user_id);
           
-        DROP POLICY IF EXISTS "Allow users to update their own interests" ON 
-user_interests;
+        DROP POLICY IF EXISTS "Allow users to update their own interests" ON user_interests;
         CREATE POLICY "Allow users to update their own interests" 
           ON user_interests FOR UPDATE 
           TO authenticated 
           USING (auth.uid() = user_id);
           
-        DROP POLICY IF EXISTS "Allow users to delete their own interests" ON 
-user_interests;
+        DROP POLICY IF EXISTS "Allow users to delete their own interests" ON user_interests;
         CREATE POLICY "Allow users to delete their own interests" 
           ON user_interests FOR DELETE 
           TO authenticated 
@@ -243,15 +235,13 @@ user_interests;
           ON achievements FOR SELECT 
           USING (true);
           
-        DROP POLICY IF EXISTS "Allow authenticated users to insert achievements" ON 
-achievements;
+        DROP POLICY IF EXISTS "Allow authenticated users to insert achievements" ON achievements;
         CREATE POLICY "Allow authenticated users to insert achievements" 
           ON achievements FOR INSERT 
           TO authenticated 
           WITH CHECK (true);
           
-        DROP POLICY IF EXISTS "Allow authenticated users to update achievements" ON 
-achievements;
+        DROP POLICY IF EXISTS "Allow authenticated users to update achievements" ON achievements;
         CREATE POLICY "Allow authenticated users to update achievements" 
           ON achievements FOR UPDATE 
           TO authenticated 
@@ -266,22 +256,19 @@ achievements;
         ALTER TABLE user_achievements ENABLE ROW LEVEL SECURITY;
         
         -- Create policy for user_achievements
-        DROP POLICY IF EXISTS "Allow users to read their own achievements" ON 
-user_achievements;
+        DROP POLICY IF EXISTS "Allow users to read their own achievements" ON user_achievements;
         CREATE POLICY "Allow users to read their own achievements" 
           ON user_achievements FOR SELECT 
           TO authenticated 
           USING (auth.uid() = user_id);
           
-        DROP POLICY IF EXISTS "Allow system to insert user achievements" ON 
-user_achievements;
+        DROP POLICY IF EXISTS "Allow system to insert user achievements" ON user_achievements;
         CREATE POLICY "Allow system to insert user achievements" 
           ON user_achievements FOR INSERT 
           TO authenticated 
           WITH CHECK (true);
           
-        DROP POLICY IF EXISTS "Allow system to update user achievements" ON 
-user_achievements;
+        DROP POLICY IF EXISTS "Allow system to update user achievements" ON user_achievements;
         CREATE POLICY "Allow system to update user achievements" 
           ON user_achievements FOR UPDATE 
           TO authenticated 
@@ -326,20 +313,13 @@ user_achievements;
     await supabase.rpc("execute_sql", {
       sql_query: `
         -- Insert default achievements if they don't exist
-        INSERT INTO achievements (name, description, badge_image_url, points, category, 
-requirements)
+        INSERT INTO achievements (name, description, badge_image_url, points, category, requirements)
         VALUES 
-          ('Welcome Aboard', 'Complete the onboarding process', '/badges/welcome.svg', 
-10, 'onboarding', '{"type": "onboarding", "completed": true}'),
-          ('First Post', 'Create your first topic', '/badges/first-post.svg', 20, 
-'engagement', '{"type": "topic_count", "count": 1}'),
-          ('Conversation Starter', 'Get 5 replies on your topics', 
-'/badges/conversation.svg', 30, 'engagement', '{"type": "replies_received", "count": 
-5}'),
-          ('Regular', 'Visit the app for 7 consecutive days', '/badges/regular.svg', 50, 
-'loyalty', '{"type": "consecutive_days", "count": 7}'),
-          ('Explorer', 'Visit 10 different topics', '/badges/explorer.svg', 40, 
-'exploration', '{"type": "topics_visited", "count": 10}')
+          ('Welcome Aboard', 'Complete the onboarding process', '/badges/welcome.svg', 10, 'onboarding', '{"type": "onboarding", "completed": true}'),
+          ('First Post', 'Create your first topic', '/badges/first-post.svg', 20, 'engagement', '{"type": "topic_count", "count": 1}'),
+          ('Conversation Starter', 'Get 5 replies on your topics', '/badges/conversation.svg', 30, 'engagement', '{"type": "replies_received", "count": 5}'),
+          ('Regular', 'Visit the app for 7 consecutive days', '/badges/regular.svg', 50, 'loyalty', '{"type": "consecutive_days", "count": 7}'),
+          ('Explorer', 'Visit 10 different topics', '/badges/explorer.svg', 40, 'exploration', '{"type": "topics_visited", "count": 10}')
         ON CONFLICT (name) DO NOTHING;
       `,
     })
@@ -417,13 +397,10 @@ requirements)
             -- Update progress
             UPDATE user_achievements
             SET 
-              progress = GREATEST(v_current_progress, COALESCE(p_progress, 
-v_current_progress + 1)),
-              completed = GREATEST(v_current_progress, COALESCE(p_progress, 
-v_current_progress + 1)) >= 100,
+              progress = GREATEST(v_current_progress, COALESCE(p_progress, v_current_progress + 1)),
+              completed = GREATEST(v_current_progress, COALESCE(p_progress, v_current_progress + 1)) >= 100,
               earned_at = CASE 
-                WHEN GREATEST(v_current_progress, COALESCE(p_progress, v_current_progress 
-+ 1)) >= 100 AND v_current_progress < 100 
+                WHEN GREATEST(v_current_progress, COALESCE(p_progress, v_current_progress + 1)) >= 100 AND v_current_progress < 100 
                 THEN now() 
                 ELSE earned_at 
               END
@@ -432,8 +409,7 @@ v_current_progress + 1)) >= 100,
               achievement_id = v_achievement_id;
             
             -- Update points if newly completed
-            IF GREATEST(v_current_progress, COALESCE(p_progress, v_current_progress + 1)) 
->= 100 AND v_current_progress < 100 THEN
+            IF GREATEST(v_current_progress, COALESCE(p_progress, v_current_progress + 1)) >= 100 AND v_current_progress < 100 THEN
               UPDATE profiles
               SET total_points = total_points + v_points
               WHERE id = p_user_id;

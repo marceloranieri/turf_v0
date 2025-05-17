@@ -1,653 +1,882 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {
-  ArrowLeft,
-  Clock,
-  Users,
-  MoreHorizontal,
-  Heart,
-  MessageSquare,
-  Share2,
-  ChevronUp,
-  ChevronDown,
-  Send,
-} from "lucide-react"
-import { useAuth } from "@/context/auth-context"
+import { useState, useEffect, useRef } from "react"
 import { useTopics } from "@/context/topics-context"
+import { useAuth } from "@/context/auth-context"
 import { useRealtime } from "@/context/realtime-context"
-import { useProfile } from "@/context/profile-context"
-import { debounce } from "@/lib/utils"
-import { useSupabaseClient } from "@supabase/auth-helpers-react"
+import { useSupabase } from "@/lib/supabase-provider"
+import { useSearchParams } from "next/navigation"
+import { Avatar } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Card } from "@/components/ui/card"
+import { 
+  ArrowUp, 
+  ArrowDown, 
+  MessageSquare, 
+  Image as ImageIcon,
+  Smile,
+  SendHorizontal,
+  MoreVertical,
+  X
+} from "lucide-react"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react"
+import { formatDistanceToNow } from "date-fns"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/components/ui/use-toast"
+import debounce from "lodash/debounce"
+
+type Message = {
+  id: string
+  content: string
+  image_url?: string
+  user_id: string
+  user: {
+    id: string
+    username: string
+    avatar_url: string
+    is_online: boolean
+  }
+  created_at: string
+  parent_id: string | null
+  reactions: {
+    emoji: string
+    count: number
+  }[]
+  replies?: Message[]
+  upvotes: number
+  downvotes: number
+  userVote?: "up" | "down" | null
+}
+
+type Topic = {
+  id: string
+  title: string
+  description: string
+  created_at: string
+  user_id: string
+  user: {
+    username: string
+    avatar_url: string
+  }
+}
 
 export function TopicDetailRealtime({ topicId }: { topicId: string }) {
-  const router = useRouter()
-  const { user } = useAuth()
-  const { profile } = useProfile()
   const { fetchTopic, fetchMessages, createMessage, voteMessage, addReaction } = useTopics()
-  const { setupPostSubscription, setupTypingIndicator, setTypingStatus } = useRealtime()
-  const supabase = useSupabaseClient()
-
-  const [topic, setTopic] = useState<any>(null)
-  const [messages, setMessages] = useState<any[]>([])
-  const [replyTo, setReplyTo] = useState<string | null>(null)
-  const [messageInput, setMessageInput] = useState("")
-  const [timeLeft, setTimeLeft] = useState("")
-  const [typingUsers, setTypingUsers] = useState<any[]>([])
+  const { user } = useAuth()
+  const { supabase } = useSupabase()
+  const { activeTypingUsers, startTyping, stopTyping } = useRealtime()
+  const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const highlightedMessageId = searchParams.get("highlight")
+  
+  const [topic, setTopic] = useState<Topic | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [newMessage, setNewMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [replyTo, setReplyTo] = useState<Message | null>(null)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const typingRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Topic typing users
+  const typingUsers = activeTypingUsers[topicId] || []
 
-  // Fetch topic and messages
+  // Initial data loading
   useEffect(() => {
-    const loadData = async () => {
+    const loadTopicData = async () => {
+      setIsLoading(true)
+      
+      // Fetch topic details
       const topicData = await fetchTopic(topicId)
       if (topicData) {
         setTopic(topicData)
-
-        // Calculate time left
-        const expiresAt = new Date(topicData.expires_at)
-        const now = new Date()
-        const diff = expiresAt.getTime() - now.getTime()
-
-        if (diff > 0) {
-          const hours = Math.floor(diff / (1000 * 60 * 60))
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-          setTimeLeft(
-            `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
-          )
-        } else {
-          setTimeLeft("00:00:00")
-        }
       }
-
+      
+      // Fetch messages
       const messagesData = await fetchMessages(topicId)
-      setMessages(messagesData)
-    }
-
-    loadData()
-  }, [topicId, fetchTopic, fetchMessages])
-
-  // Set up real-time subscriptions
-  useEffect(() => {
-    // Subscribe to message updates
-    const unsubscribeMessages = setupPostSubscription(topicId, async (payload) => {
-      if (payload.eventType === "INSERT") {
-        // Fetch the new message with user data
-        const messagesData = await fetchMessages(topicId)
+      if (messagesData) {
         setMessages(messagesData)
-      } else if (payload.eventType === "UPDATE") {
-        // Update the existing message
-        setMessages((prev) =>
-          prev.map((message) => (message.id === payload.new.id ? { ...message, ...payload.new } : message)),
-        )
       }
-    })
-
-    // Subscribe to typing indicators
-    const unsubscribeTyping = setupTypingIndicator(topicId, async (payload) => {
-      if (payload.new.is_typing) {
-        // Fetch user info
-        const { data: userData } = await supabase
-          .from("profiles")
-          .select("username, full_name, avatar_url")
-          .eq("id", payload.new.user_id)
-          .single()
-
-        if (userData && payload.new.user_id !== user?.id) {
-          setTypingUsers((prev) => {
-            // Add user if not already in the list
-            if (!prev.find((u) => u.id === payload.new.user_id)) {
-              return [...prev, { id: payload.new.user_id, ...userData }]
-            }
-            return prev
-          })
-
-          // Remove user after 3 seconds of no updates
-          setTimeout(() => {
-            setTypingUsers((prev) => prev.filter((u) => u.id !== payload.new.user_id))
-          }, 3000)
-        }
+      
+      setIsLoading(false)
+      
+      // Scroll to highlighted message if any
+      if (highlightedMessageId) {
+        setTimeout(() => {
+          const element = document.getElementById(`message-${highlightedMessageId}`)
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth" })
+            element.classList.add("bg-blue-800/20")
+            setTimeout(() => {
+              element.classList.remove("bg-blue-800/20")
+            }, 3000)
+          }
+        }, 500)
       } else {
-        // Remove user from typing list
-        setTypingUsers((prev) => prev.filter((u) => u.id !== payload.new.user_id))
+        // Otherwise scroll to bottom
+        scrollToBottom()
       }
-    })
-
-    return () => {
-      unsubscribeMessages()
-      unsubscribeTyping()
     }
-  }, [topicId, setupPostSubscription, setupTypingIndicator, user, supabase])
-
-  // Update countdown timer
+    
+    loadTopicData()
+  }, [topicId, fetchTopic, fetchMessages, highlightedMessageId])
+  
+  // Setup real-time subscriptions
   useEffect(() => {
-    if (!timeLeft) return
-
-    const timer = setInterval(() => {
-      const [hours, minutes, seconds] = timeLeft.split(":").map(Number)
-      let newSeconds = seconds - 1
-      let newMinutes = minutes
-      let newHours = hours
-
-      if (newSeconds < 0) {
-        newSeconds = 59
-        newMinutes -= 1
-      }
-
-      if (newMinutes < 0) {
-        newMinutes = 59
-        newHours -= 1
-      }
-
-      if (newHours < 0 || (newHours === 0 && newMinutes === 0 && newSeconds === 0)) {
-        // Topic expired
-        clearInterval(timer)
-        setTimeLeft("00:00:00")
-        return
-      }
-
-      setTimeLeft(
-        `${newHours.toString().padStart(2, "0")}:${newMinutes.toString().padStart(2, "0")}:${newSeconds
-          .toString()
-          .padStart(2, "0")}`,
+    if (!supabase) return
+    
+    const messagesChannel = supabase
+      .channel(`messages:${topicId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `topic_id=eq.${topicId}`,
+        },
+        async (payload) => {
+          if (payload.eventType === "INSERT") {
+            // Fetch the complete message with user and reactions
+            const { data } = await supabase
+              .from("messages")
+              .select(`
+                *,
+                user:user_id (
+                  id,
+                  username,
+                  avatar_url,
+                  is_online
+                ),
+                reactions:message_reactions (
+                  emoji,
+                  count
+                )
+              `)
+              .eq("id", payload.new.id)
+              .single()
+            
+            if (data) {
+              const newMsg = data as unknown as Message
+              
+              // Handle parent-child relationship
+              if (newMsg.parent_id) {
+                // This is a reply, add it to the parent message
+                setMessages(prev => 
+                  prev.map(msg => {
+                    if (msg.id === newMsg.parent_id) {
+                      return {
+                        ...msg,
+                        replies: [...(msg.replies || []), newMsg]
+                      }
+                    }
+                    return msg
+                  })
+                )
+              } else {
+                // This is a top-level message
+                setMessages(prev => [...prev, newMsg])
+                scrollToBottom()
+              }
+            }
+          } else if (payload.eventType === "UPDATE") {
+            // Handle message updates
+            setMessages(prev => {
+              return prev.map(msg => {
+                if (msg.id === payload.new.id) {
+                  return { ...msg, ...payload.new }
+                }
+                
+                // Check in replies too
+                if (msg.replies) {
+                  return {
+                    ...msg,
+                    replies: msg.replies.map(reply => 
+                      reply.id === payload.new.id 
+                        ? { ...reply, ...payload.new }
+                        : reply
+                    )
+                  }
+                }
+                
+                return msg
+              })
+            })
+          } else if (payload.eventType === "DELETE") {
+            // Handle message deletion
+            setMessages(prev => {
+              // Remove from top-level messages
+              const filteredMessages = prev.filter(msg => msg.id !== payload.old.id)
+              
+              // Remove from replies
+              return filteredMessages.map(msg => {
+                if (msg.replies) {
+                  return {
+                    ...msg,
+                    replies: msg.replies.filter(reply => reply.id !== payload.old.id)
+                  }
+                }
+                return msg
+              })
+            })
+          }
+        }
       )
-    }, 1000)
+      
+    const reactionsChannel = supabase
+      .channel(`reactions:${topicId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "message_reactions",
+        },
+        (payload) => {
+          if (!payload.new.message_id) return
+          
+          setMessages(prev => {
+            // Update the reactions for the specified message
+            return prev.map(msg => {
+              if (msg.id === payload.new.message_id) {
+                // Create a new reactions array
+                const updatedReactions = [...(msg.reactions || [])].filter(
+                  r => r.emoji !== payload.new.emoji
+                )
+                
+                if (payload.eventType !== "DELETE") {
+                  updatedReactions.push({
+                    emoji: payload.new.emoji,
+                    count: payload.new.count
+                  })
+                }
+                
+                return { ...msg, reactions: updatedReactions }
+              }
+              
+              // Check in replies too
+              if (msg.replies) {
+                return {
+                  ...msg,
+                  replies: msg.replies.map(reply => {
+                    if (reply.id === payload.new.message_id) {
+                      const updatedReactions = [...(reply.reactions || [])].filter(
+                        r => r.emoji !== payload.new.emoji
+                      )
+                      
+                      if (payload.eventType !== "DELETE") {
+                        updatedReactions.push({
+                          emoji: payload.new.emoji,
+                          count: payload.new.count
+                        })
+                      }
+                      
+                      return { ...reply, reactions: updatedReactions }
+                    }
+                    return reply
+                  })
+                }
+              }
+              
+              return msg
+            })
+          })
+        }
+      )
+      
+    const votesChannel = supabase
+      .channel(`votes:${topicId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "message_votes",
+        },
+        async (payload) => {
+          if (!payload.new && !payload.old) return
+          
+          const messageId = payload.new?.message_id || payload.old?.message_id
+          
+          // Fetch updated vote counts
+          const { data } = await supabase.rpc("get_message_votes", {
+            message_id: messageId
+          })
+          
+          if (data) {
+            setMessages(prev => {
+              return prev.map(msg => {
+                if (msg.id === messageId) {
+                  return { 
+                    ...msg, 
+                    upvotes: data.upvotes,
+                    downvotes: data.downvotes,
+                    userVote: user?.id === payload.new?.user_id 
+                      ? payload.new?.is_upvote ? "up" : "down"
+                      : msg.userVote
+                  }
+                }
+                
+                // Check in replies too
+                if (msg.replies) {
+                  return {
+                    ...msg,
+                    replies: msg.replies.map(reply => 
+                      reply.id === messageId
+                        ? { 
+                            ...reply, 
+                            upvotes: data.upvotes,
+                            downvotes: data.downvotes,
+                            userVote: user?.id === payload.new?.user_id 
+                              ? payload.new?.is_upvote ? "up" : "down"
+                              : reply.userVote
+                          }
+                        : reply
+                    )
+                  }
+                }
+                
+                return msg
+              })
+            })
+          }
+        }
+      )
 
-    return () => clearInterval(timer)
-  }, [timeLeft])
+    // Subscribe to all channels
+    messagesChannel.subscribe()
+    reactionsChannel.subscribe()
+    votesChannel.subscribe()
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+    // Cleanup
+    return () => {
+      supabase.removeChannel(messagesChannel)
+      supabase.removeChannel(reactionsChannel)
+      supabase.removeChannel(votesChannel)
+    }
+  }, [supabase, topicId, user])
 
-  // Handle typing indicator
-  const debouncedTypingUpdate = useRef(
-    debounce((isTyping: boolean) => {
-      setTypingStatus(topicId, isTyping)
-    }, 500),
-  ).current
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, 100)
+  }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setMessageInput(value)
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value)
+    
+    // Handle typing indicators
+    if (e.target.value.trim() !== "") {
+      if (typingRef.current) {
+        clearTimeout(typingRef.current)
+      } else {
+        startTyping(topicId)
+      }
+      
+      typingRef.current = setTimeout(() => {
+        stopTyping(topicId)
+        typingRef.current = null
+      }, 3000)
+    } else if (typingRef.current) {
+      clearTimeout(typingRef.current)
+      stopTyping(topicId)
+      typingRef.current = null
+    }
+  }
 
-    // Update typing status
-    if (value.length > 0) {
-      debouncedTypingUpdate(true)
-    } else {
-      debouncedTypingUpdate(false)
+  const handleImageUpload = async (file: File): Promise<string | null> => {
+    if (!user) return null
+    
+    setIsUploadingImage(true)
+    
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`
+      const filePath = `message-images/${fileName}`
+      
+      // Upload image to storage
+      const { error: uploadError } = await supabase
+        .storage
+        .from("public")
+        .upload(filePath, file)
+      
+      if (uploadError) {
+        throw uploadError
+      }
+      
+      // Get public URL
+      const { data } = supabase
+        .storage
+        .from("public")
+        .getPublicUrl(filePath)
+      
+      return data.publicUrl
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      toast({
+        variant: "destructive",
+        title: "Error uploading image",
+        description: "Failed to upload image. Please try again."
+      })
+      return null
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    // File size validation (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Images must be less than 5MB"
+      })
+      return
+    }
+    
+    setImageFile(file)
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const clearImageSelection = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!user || isSubmitting || (!newMessage.trim() && !imageFile)) return
+    
+    setIsSubmitting(true)
+    
+    try {
+      let imageUrl: string | undefined
+      
+      // Upload image if any
+      if (imageFile) {
+        const uploadedUrl = await handleImageUpload(imageFile)
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl
+        }
+      }
+      
+      // Create message
+      await createMessage(
+        topicId,
+        newMessage.trim(),
+        imageUrl,
+        replyTo?.id
+      )
+      
+      // Reset form
+      setNewMessage("")
+      setReplyTo(null)
+      clearImageSelection()
+      
+      // Stop typing indicator
+      if (typingRef.current) {
+        clearTimeout(typingRef.current)
+        stopTyping(topicId)
+        typingRef.current = null
+      }
+    } catch (error) {
+      console.error("Error sending message:", error)
+      toast({
+        variant: "destructive",
+        title: "Failed to send message",
+        description: "Please try again later"
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleVote = async (messageId: string, isUpvote: boolean) => {
+    if (!user) return
+    
     try {
       await voteMessage(messageId, isUpvote)
-
-      // Optimistic update
-      setMessages((prevMessages) => {
-        return prevMessages.map((message) => {
-          if (message.id === messageId) {
-            const wasUpvoted = message.upvoted
-            const wasDownvoted = message.downvoted
-
-            let voteDelta = 0
-            if (isUpvote) {
-              if (wasUpvoted)
-                voteDelta = -1 // Removing upvote
-              else if (wasDownvoted)
-                voteDelta = 2 // Changing from downvote to upvote
-              else voteDelta = 1 // Adding upvote
-            } else {
-              if (wasDownvoted)
-                voteDelta = 1 // Removing downvote
-              else if (wasUpvoted)
-                voteDelta = -2 // Changing from upvote to downvote
-              else voteDelta = -1 // Adding downvote
-            }
-
-            return {
-              ...message,
-              votes: message.votes + voteDelta,
-              upvoted: isUpvote ? !wasUpvoted : false,
-              downvoted: !isUpvote ? !wasDownvoted : false,
-            }
-          } else if (message.replies) {
-            // Check replies
-            return {
-              ...message,
-              replies: message.replies.map((reply: any) => {
-                if (reply.id === messageId) {
-                  const wasUpvoted = reply.upvoted
-                  const wasDownvoted = reply.downvoted
-
-                  let voteDelta = 0
-                  if (isUpvote) {
-                    if (wasUpvoted) voteDelta = -1
-                    else if (wasDownvoted) voteDelta = 2
-                    else voteDelta = 1
-                  } else {
-                    if (wasDownvoted) voteDelta = 1
-                    else if (wasUpvoted) voteDelta = -2
-                    else voteDelta = -1
-                  }
-
-                  return {
-                    ...reply,
-                    votes: reply.votes + voteDelta,
-                    upvoted: isUpvote ? !wasUpvoted : false,
-                    downvoted: !isUpvote ? !wasDownvoted : false,
-                  }
-                }
-                return reply
-              }),
-            }
-          }
-          return message
-        })
+    } catch (error) {
+      console.error("Error voting on message:", error)
+      toast({
+        variant: "destructive",
+        title: "Failed to vote",
+        description: "Please try again later"
       })
-    } catch (error) {
-      console.error("Error voting:", error)
     }
   }
 
-  const handleReply = (messageId: string) => {
-    setReplyTo(messageId)
-  }
-
-  const handleSendMessage = async () => {
-    if (!messageInput.trim() || !user) return
-
-    try {
-      // Clear typing status
-      setTypingStatus(topicId, false)
-
-      // Create message
-      const newMessage = await createMessage(topicId, messageInput, undefined, replyTo || undefined)
-
-      if (newMessage) {
-        // Clear input and reply state
-        setMessageInput("")
-        setReplyTo(null)
-
-        // Messages will be updated via subscription
-      }
-    } catch (error) {
-      console.error("Error sending message:", error)
-    }
-  }
-
-  const handleAddReaction = async (messageId: string, emoji: string) => {
+  const handleReaction = async (messageId: string, emoji: string) => {
+    if (!user) return
+    
     try {
       await addReaction(messageId, emoji)
-
-      // Optimistic update
-      setMessages((prevMessages) => {
-        return prevMessages.map((message) => {
-          if (message.id === messageId) {
-            // Add reaction to top-level message
-            const existingReactionIndex = message.reactions.findIndex((r: any) => r.emoji === emoji)
-
-            if (existingReactionIndex >= 0) {
-              // Increment existing reaction
-              const updatedReactions = [...message.reactions]
-              updatedReactions[existingReactionIndex] = {
-                ...updatedReactions[existingReactionIndex],
-                count: updatedReactions[existingReactionIndex].count + 1,
-              }
-              return { ...message, reactions: updatedReactions }
-            } else {
-              // Add new reaction
-              return {
-                ...message,
-                reactions: [...message.reactions, { emoji, count: 1 }],
-              }
-            }
-          } else if (message.replies) {
-            // Check replies
-            return {
-              ...message,
-              replies: message.replies.map((reply: any) => {
-                if (reply.id === messageId) {
-                  const existingReactionIndex = reply.reactions.findIndex((r: any) => r.emoji === emoji)
-
-                  if (existingReactionIndex >= 0) {
-                    // Increment existing reaction
-                    const updatedReactions = [...reply.reactions]
-                    updatedReactions[existingReactionIndex] = {
-                      ...updatedReactions[existingReactionIndex],
-                      count: updatedReactions[existingReactionIndex].count + 1,
-                    }
-                    return { ...reply, reactions: updatedReactions }
-                  } else {
-                    // Add new reaction
-                    return {
-                      ...reply,
-                      reactions: [...reply.reactions, { emoji, count: 1 }],
-                    }
-                  }
-                }
-                return reply
-              }),
-            }
-          }
-          return message
-        })
-      })
+      setShowEmojiPicker(false)
     } catch (error) {
       console.error("Error adding reaction:", error)
+      toast({
+        variant: "destructive",
+        title: "Failed to add reaction",
+        description: "Please try again later"
+      })
     }
   }
 
-  if (!topic) {
+  const handleEmojiSelect = (emojiData: EmojiClickData, event: MouseEvent) => {
+    if (showEmojiPicker) {
+      const messageId = showEmojiPicker === true ? "" : showEmojiPicker
+      if (messageId) {
+        handleReaction(messageId, emojiData.emoji)
+      } else {
+        // Insert emoji into message text
+        setNewMessage(prev => prev + emojiData.emoji)
+      }
+      setShowEmojiPicker(false)
+    }
+  }
+
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-700"></div>
+      <div className="flex flex-col h-full p-4 space-y-4">
+        <Skeleton className="w-3/4 h-8" />
+        <Skeleton className="w-1/2 h-6" />
+        
+        <div className="flex-1 overflow-y-auto space-y-4 py-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="flex items-start gap-3">
+              <Skeleton className="w-10 h-10 rounded-full" />
+              <div className="flex-1">
+                <Skeleton className="w-32 h-5 mb-2" />
+                <Skeleton className="w-full h-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <Skeleton className="w-full h-24" />
       </div>
     )
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Topic Header */}
-      <div className="sticky top-0 z-10 flex items-center p-4 border-b border-zinc-800/50 backdrop-blur-sm bg-zinc-900/90">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="mr-2 text-zinc-400 hover:text-white"
-          onClick={() => router.push("/dashboard")}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-
-        <div className="flex-1">
-          <div className="flex items-center">
-            <h1 className="font-semibold text-lg">{topic.title}</h1>
-            <Badge className="ml-2 bg-green-600/20 text-green-400 border-green-600/30 text-xs">Active</Badge>
-          </div>
-          <p className="text-zinc-300 text-sm">{topic.question}</p>
-        </div>
-
-        <div className="flex items-center ml-4 space-x-4">
-          <div className="flex items-center text-sm text-zinc-400">
-            <Clock className="h-4 w-4 mr-1" />
-            <Badge variant="outline" className="text-xs bg-zinc-800/80 text-zinc-300 border-zinc-700">
-              {timeLeft}
-            </Badge>
-          </div>
-          <div className="flex items-center text-sm text-zinc-400">
-            <Users className="h-4 w-4 mr-1" />
-            <span>{messages.length}</span>
-          </div>
+  if (!topic) {
+    return (
+      <div className="flex justify-center items-center h-full p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-bold">Topic not found</h2>
+          <p className="text-gray-400 mt-2">This topic may have been deleted or you don't have access to it.</p>
         </div>
       </div>
+    )
+  }
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {messages.map((message) => (
-          <div key={message.id} className="space-y-4">
-            <Message
-              message={message}
-              onVote={(messageId, isUpvote) => handleVote(messageId, isUpvote)}
-              onReply={handleReply}
-              onReaction={(messageId, emoji) => handleAddReaction(messageId, emoji)}
-            />
-
-            {message.replies && message.replies.length > 0 && (
-              <div className="ml-12 space-y-4 border-l-2 border-zinc-800 pl-4">
-                {message.replies.map((reply: any) => (
-                  <Message
-                    key={reply.id}
-                    message={reply}
-                    isReply={true}
-                    onVote={(messageId, isUpvote) => handleVote(messageId, isUpvote)}
-                    onReply={() => handleReply(message.id)}
-                    onReaction={(messageId, emoji) => handleAddReaction(messageId, emoji)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Typing indicator */}
-      {typingUsers.length > 0 && (
-        <div className="px-4 py-2 bg-zinc-800/30 border-t border-zinc-700/30">
-          <div className="flex items-center text-sm text-zinc-400">
-            <div className="flex space-x-1 mr-2">
-              {typingUsers.slice(0, 3).map((user) => (
-                <Avatar key={user.id} className="h-6 w-6">
-                  <AvatarImage src={user.avatar_url || "/placeholder.svg"} />
-                  <AvatarFallback>{user.username[0]}</AvatarFallback>
-                </Avatar>
-              ))}
-            </div>
-            <span>
-              {typingUsers.length === 1
-                ? `${typingUsers[0].username} is typing...`
-                : typingUsers.length === 2
-                  ? `${typingUsers[0].username} and ${typingUsers[1].username} are typing...`
-                  : `${typingUsers[0].username} and ${typingUsers.length - 1} others are typing...`}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Reply indicator */}
-      {replyTo && (
-        <div className="px-4 py-2 bg-zinc-800/50 border-t border-zinc-700/50 flex items-center">
-          <span className="text-sm text-zinc-400">
-            Replying to{" "}
-            <span className="font-medium text-zinc-300">
-              {messages.find((m) => m.id === replyTo)?.user?.username ||
-                messages.flatMap((m) => m.replies || []).find((r: any) => r.id === replyTo)?.user?.username}
-            </span>
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-auto text-zinc-400 hover:text-white"
-            onClick={() => setReplyTo(null)}
-          >
-            Cancel
-          </Button>
-        </div>
-      )}
-
-      {/* Input area */}
-      <div className="p-4 border-t border-zinc-800/50 backdrop-blur-sm bg-zinc-900/80 flex items-center">
-        <Avatar className="h-8 w-8 mr-3">
-          <AvatarImage src={profile?.avatar_url || "/placeholder.svg?height=32&width=32"} />
-          <AvatarFallback>{profile?.username?.[0] || "U"}</AvatarFallback>
-        </Avatar>
-        <Input
-          className="flex-1 bg-zinc-800/50 border-zinc-700/50 text-white placeholder:text-zinc-500 focus-visible:ring-zinc-700"
-          placeholder={replyTo ? "Type your reply..." : "Post your reply..."}
-          value={messageInput}
-          onChange={handleInputChange}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault()
-              handleSendMessage()
-            }
-          }}
-        />
-        <Button
-          className="ml-2 bg-violet-600 hover:bg-violet-700 text-white"
-          onClick={handleSendMessage}
-          disabled={!messageInput.trim()}
-        >
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-// Message component remains the same as in your original code
-function Message({
-  message,
-  isReply = false,
-  onVote,
-  onReply,
-  onReaction,
-}: {
-  message: any
-  isReply?: boolean
-  onVote: (messageId: string, isUpvote: boolean) => void
-  onReply: (messageId: string) => void
-  onReaction: (messageId: string, emoji: string) => void
-}) {
-  const [showReactionPicker, setShowReactionPicker] = useState(false)
-
-  const reactions = [
-    { emoji: "👍", label: "Thumbs Up" },
-    { emoji: "❤️", label: "Heart" },
-    { emoji: "😂", label: "Laugh" },
-    { emoji: "😮", label: "Wow" },
-    { emoji: "🎉", label: "Celebrate" },
-    { emoji: "✨", label: "Sparkles" },
-  ]
-
-  return (
-    <div className="flex">
-      <div className="relative mr-3 mt-1">
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={message.user?.avatar_url || "/placeholder.svg"} />
-          <AvatarFallback>{message.user?.username?.[0] || "U"}</AvatarFallback>
-        </Avatar>
-        {message.user?.is_online && (
-          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-zinc-900"></span>
-        )}
-      </div>
-
+  // Render message component
+  const renderMessage = (message: Message, isReply = false) => (
+    <div 
+      id={`message-${message.id}`}
+      key={message.id}
+      className={`
+        flex items-start gap-3 p-3 rounded-lg transition-colors duration-300
+        ${isReply ? "ml-12 bg-neutral-900/50" : "bg-neutral-900"}
+      `}
+    >
+      <Avatar
+        src={message.user.avatar_url}
+        alt={message.user.username}
+        size="md"
+        status={message.user.is_online ? "online" : "offline"}
+      />
+      
       <div className="flex-1 min-w-0">
-        <div className="flex items-center">
-          <span className="font-medium">{message.user?.username || "Anonymous"}</span>
-          <span className="ml-2 text-sm text-zinc-500">
-            {new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{message.user.username}</span>
+          <span className="text-xs text-gray-400">
+            {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
           </span>
-          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-zinc-400 hover:text-white">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
         </div>
-
-        <p className="mt-1 text-zinc-300">{message.content}</p>
-
-        {/* Reactions */}
-        {message.reactions && message.reactions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {message.reactions.map((reaction: any, index: number) => (
-              <Badge
-                key={index}
-                variant="outline"
-                className="bg-zinc-800/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800 cursor-pointer"
-                onClick={() => onReaction(message.id, reaction.emoji)}
-              >
-                {reaction.emoji} {reaction.count}
-              </Badge>
-            ))}
+        
+        <div className="mt-1 break-words">{message.content}</div>
+        
+        {message.image_url && (
+          <div className="mt-2">
+            <img 
+              src={message.image_url} 
+              alt="Attached image" 
+              className="rounded-md max-h-80 object-contain bg-neutral-800"
+            />
           </div>
         )}
-
-        {/* Actions */}
-        <div className="mt-2 flex items-center">
-          {/* Voting */}
-          <div className="flex items-center mr-4 bg-zinc-800/50 rounded-md">
+        
+        <div className="flex items-center gap-2 mt-2">
+          {/* Vote buttons */}
+          <div className="flex items-center">
             <Button
               variant="ghost"
               size="icon"
-              className={`h-8 w-8 rounded-r-none ${
-                message.upvoted ? "text-green-500" : "text-zinc-400 hover:text-white"
-              }`}
-              onClick={() => onVote(message.id, true)}
+              className={`h-8 w-8 ${message.userVote === "up" ? "text-green-500" : ""}`}
+              onClick={() => handleVote(message.id, true)}
             >
-              <ChevronUp className="h-4 w-4" />
+              <ArrowUp size={16} />
             </Button>
-
-            <span className="px-2 text-sm font-medium">{message.votes}</span>
-
+            <span className="text-sm mx-1">
+              {(message.upvotes || 0) - (message.downvotes || 0)}
+            </span>
             <Button
               variant="ghost"
               size="icon"
-              className={`h-8 w-8 rounded-l-none ${
-                message.downvoted ? "text-red-500" : "text-zinc-400 hover:text-white"
-              }`}
-              onClick={() => onVote(message.id, false)}
+              className={`h-8 w-8 ${message.userVote === "down" ? "text-red-500" : ""}`}
+              onClick={() => handleVote(message.id, false)}
             >
-              <ChevronDown className="h-4 w-4" />
+              <ArrowDown size={16} />
             </Button>
           </div>
-
+          
           {/* Reply button */}
           {!isReply && (
             <Button
               variant="ghost"
               size="sm"
-              className="text-zinc-400 hover:text-white h-8"
-              onClick={() => onReply(message.id)}
+              className="h-8 text-xs"
+              onClick={() => setReplyTo(message)}
             >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              {message.replies?.length > 0 && <span className="text-xs">{message.replies.length}</span>}
+              <MessageSquare size={16} className="mr-1" />
+              Reply
             </Button>
           )}
-
+          
           {/* Reaction button */}
           <div className="relative">
             <Button
               variant="ghost"
               size="sm"
-              className="text-zinc-400 hover:text-white h-8"
-              onClick={() => setShowReactionPicker(!showReactionPicker)}
+              className="h-8 text-xs"
+              onClick={() => setShowEmojiPicker(message.id)}
             >
-              <Heart className="h-4 w-4 mr-1" />
-              <span className="text-xs">React</span>
+              <Smile size={16} className="mr-1" />
+              React
             </Button>
-
-            {showReactionPicker && (
-              <div className="absolute bottom-full left-0 mb-2 p-2 bg-zinc-800 rounded-md border border-zinc-700 flex gap-1 z-10">
-                {reactions.map((reaction) => (
-                  <TooltipProvider key={reaction.emoji}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="text-lg hover:bg-zinc-700 p-1 rounded-md cursor-pointer"
-                          onClick={() => {
-                            onReaction(message.id, reaction.emoji)
-                            setShowReactionPicker(false)
-                          }}
-                        >
-                          {reaction.emoji}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <p>{reaction.label}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ))}
-              </div>
-            )}
           </div>
-
-          {/* Share button */}
-          {!isReply && (
-            <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white h-8 ml-auto">
-              <Share2 className="h-4 w-4 mr-1" />
-            </Button>
+          
+          {/* Message actions */}
+          {user?.id === message.user_id && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-neutral-800 text-white border-gray-700">
+                <DropdownMenuItem>Edit</DropdownMenuItem>
+                <DropdownMenuItem className="text-red-400">Delete</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
+        
+        {/* Reactions display */}
+        {message.reactions && message.reactions.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {message.reactions.map((reaction) => (
+              <div
+                key={reaction.emoji}
+                className="flex items-center bg-neutral-800 rounded-full px-2 py-1 text-sm"
+              >
+                <span className="mr-1">{reaction.emoji}</span>
+                <span className="text-xs">{reaction.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Replies */}
+        {!isReply && message.replies && message.replies.length > 0 && (
+          <div className="mt-3 space-y-3">
+            {message.replies.map((reply) => renderMessage(reply, true))}
+          </div>
+        )}
       </div>
+    </div>
+  )
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Topic header */}
+      <div className="border-b border-gray-800 p-4">
+        <h1 className="text-2xl font-bold">{topic.title}</h1>
+        <p className="text-gray-400 mt-1">{topic.description}</p>
+      </div>
+      
+      {/* Messages container */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <MessageSquare size={48} className="text-gray-500 mb-3" />
+            <h3 className="text-xl font-medium">No messages yet</h3>
+            <p className="text-gray-400 mt-1">Be the first to start the conversation!</p>
+          </div>
+        ) : (
+          <>
+            {messages.map(message => renderMessage(message))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+      
+      {/* Typing indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-4 py-1 text-sm text-gray-400">
+          {typingUsers.length === 1 
+            ? `${typingUsers[0]} is typing...`
+            : typingUsers.length === 2
+              ? `${typingUsers[0]} and ${typingUsers[1]} are typing...`
+              : `${typingUsers[0]} and ${typingUsers.length - 1} others are typing...`
+          }
+        </div>
+      )}
+      
+      {/* Reply indicator */}
+      {replyTo && (
+        <div className="px-4 py-2 flex items-center justify-between bg-neutral-800">
+          <div className="flex items-center">
+            <MessageSquare size={16} className="text-blue-400 mr-2" />
+            <span className="text-sm">
+              Replying to <span className="font-medium">{replyTo.user.username}</span>
+            </span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={() => setReplyTo(null)}
+          >
+            <X size={14} />
+          </Button>
+        </div>
+      )}
+      
+      {/* Message form */}
+      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-800">
+        {imagePreview && (
+          <div className="mb-3 relative inline-block">
+            <img 
+              src={imagePreview} 
+              alt="Preview" 
+              className="max-h-40 rounded-md"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-1 right-1 h-6 w-6 rounded-full"
+              onClick={clearImageSelection}
+              type="button"
+            >
+              <X size={14} />
+            </Button>
+          </div>
+        )}
+        
+        <div className="flex items-end gap-2">
+          <Textarea
+            value={newMessage}
+            onChange={handleMessageChange}
+            placeholder={replyTo ? `Reply to ${replyTo.user.username}...` : "Type a message..."}
+            className="min-h-[100px] bg-neutral-800 border-gray-700 resize-none"
+          />
+          
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImageIcon size={20} />
+            </Button>
+            
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageSelect}
+            />
+            
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => setShowEmojiPicker(true)}
+            >
+              <Smile size={20} />
+            </Button>
+            
+            <Button
+              type="submit"
+              size="icon"
+              className="rounded-full"
+              disabled={isSubmitting || isUploadingImage || (!newMessage.trim() && !imageFile)}
+            >
+              <SendHorizontal size={20} />
+            </Button>
+          </div>
+        </div>
+      </form>
+      
+      {/* Emoji picker */}
+      {showEmojiPicker && (
+        <div 
+          className="absolute bottom-[170px] right-4 z-50"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-1 right-1 h-6 w-6 bg-neutral-700 z-10"
+              onClick={() => setShowEmojiPicker(false)}
+            >
+              <X size={14} />
+            </Button>
+            <EmojiPicker
+              onEmojiClick={handleEmojiSelect}
+              skinTonesDisabled
+              searchDisabled={false}
+              width={300}
+              height={400}
+              theme="dark"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

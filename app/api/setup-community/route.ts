@@ -7,15 +7,17 @@ export async function POST(request: Request) {
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    // Commented out authentication check temporarily
-    /*
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
-    */
+    // Only check if user is authenticated, not if they're admin
+    // Comment out this block
+    // const {
+    //   data: { user },
+    // } = await supabase.auth.getUser()
+    // if (!user) {
+    //   return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    // }
+
+    // For setting admin later, we'll use a placeholder user ID
+    const placeholderUserId = "00000000-0000-0000-0000-000000000000"
 
     // Create user_interests table
     await supabase.rpc("execute_sql", {
@@ -498,22 +500,22 @@ export async function POST(request: Request) {
       `,
     })
 
-    // Set current user as admin
-    await supabase.rpc("execute_sql", {
-      sql_query: `
-        -- Insert or update the current user as admin
-        INSERT INTO profiles (id, username, full_name, is_admin)
-        VALUES ('${user.id}', 'admin', 'Admin User', true)
-        ON CONFLICT (id) 
-        DO UPDATE SET 
-          is_admin = true,
-          updated_at = now();
-      `,
-    })
+    // Modify the admin setting code to use the placeholder or remove it
+    // await supabase.rpc("execute_sql", {
+    //   sql_query: `
+    //     -- Insert or update the current user as admin
+    //     INSERT INTO profiles (id, username, full_name, is_admin)
+    //     VALUES ('${placeholderUserId}', 'admin', 'Admin User', true)
+    //     ON CONFLICT (id)
+    //     DO UPDATE SET
+    //       is_admin = true,
+    //       updated_at = now();
+    //   `,
+    // })
 
     return NextResponse.json({
       success: true,
-      message: "Community features set up successfully. You are now an admin.",
+      message: "Community features set up successfully.",
     })
   } catch (error) {
     console.error("Error setting up community features:", error)

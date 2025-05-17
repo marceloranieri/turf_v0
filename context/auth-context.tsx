@@ -6,13 +6,12 @@ import { createContext, useContext, useEffect, useState } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
-import { sendEmailNotification } from "@/lib/email-service"
 
 type AuthContextType = {
   user: User | null
   session: Session | null
   isLoading: boolean
-  signUp: (email: string, password: string, username: string) => Promise<void>
+  signUp: (email: string, password: string, userData: any) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
@@ -54,52 +53,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (email: string, password: string, userData: any) => {
     setIsLoading(true)
     try {
-      const { data: { user }, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username
-          }
-        }
+            full_name: userData.fullName,
+            username: userData.username,
+          },
+        },
       })
 
       if (error) throw error
 
-      if (user) {
-        // Create profile
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert({
-            id: user.id,
-            username,
-            email,
-            created_at: new Date().toISOString()
-          })
+      // Create profile
+      if (data.user) {
+        const { error: profileError } = await supabase.from("profiles").insert({
+          id: data.user.id,
+          username: userData.username,
+          full_name: userData.fullName,
+          avatar_url: null,
+        })
 
         if (profileError) throw profileError
 
-        // Send welcome email with fun tone
-        try {
-          await sendEmailNotification({
-            userId: user.id,
-            emailType: "welcome",
-            template: "welcome",
-            data: {
-              username: username || email.split('@')[0]
-            }
-          })
-          console.log("Welcome email sent with fun, sarcastic tone!")
-        } catch (error) {
-          console.error("Failed to send welcome email, but we'll pretend it's fine:", error)
-          // Don't block signup if email fails
-        }
+        // Create default user settings
+        const { error: settingsError } = await supabase.from("user_settings").insert({
+          user_id: data.user.id,
+          theme: "dark",
+          notifications_enabled: true,
+          direct_messages_enabled: true,
+          private_profile: false,
+        })
 
-        router.push("/onboarding")
+        if (settingsError) throw settingsError
       }
+
+      router.push("/dashboard")
     } catch (error) {
       console.error("Error signing up:", error)
       throw error
@@ -117,18 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (error) throw error
-
-      // Check if user has completed onboarding
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_completed")
-        .single()
-
-      if (!profile?.onboarding_completed) {
-        router.push("/onboarding")
-      } else {
-        router.push("/dashboard")
-      }
+      router.push("/dashboard")
     } catch (error) {
       console.error("Error signing in:", error)
       throw error

@@ -1,36 +1,39 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import { NextRequest, NextResponse } from "next/server"
-import { sendEmailNotification } from "@/lib/email-service"
+import { NextResponse } from "next/server"
+import { sendEmailNotification } from "@/lib/supabase-email"
 
-export async function POST(req: NextRequest) {
-  // This is an admin-only endpoint requiring service role key
-  const authorization = req.headers.get("authorization")
-  
-  if (!authorization || !authorization.startsWith("Bearer ") || 
-      authorization.split(" ")[1] !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
+    // Get the request body
+    const body = await request.json()
     const { userId, emailType, subject, template, data } = body
-    
-    if (!userId || !emailType) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+
+    // Verify the request is authorized
+    const authHeader = request.headers.get("authorization")
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    
-    const success = await sendEmailNotification({
+
+    const token = authHeader.split(" ")[1]
+    if (token !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+    }
+
+    // Send the email notification
+    const result = await sendEmailNotification({
       userId,
       emailType,
       subject,
       template,
-      data
+      data,
     })
-    
-    return NextResponse.json({ success })
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error || result.reason }, { status: 400 })
+    }
+
+    return NextResponse.json({ success: true, messageId: result.messageId })
   } catch (error) {
-    console.error("Error sending email:", error)
+    console.error("Error in email send API:", error)
     return NextResponse.json({ error: "Failed to send email" }, { status: 500 })
   }
-} 
+}

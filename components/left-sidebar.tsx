@@ -28,10 +28,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/context/auth-context"
+import { useProfile } from "@/context/profile-context"
 
 export function LeftSidebar() {
   const pathname = usePathname()
   const [activeItem, setActiveItem] = useState(pathname === "/dashboard" ? "home" : "")
+  const { user, signOut } = useAuth()
+  const { profile } = useProfile()
 
   return (
     <div className="w-64 border-r border-zinc-800/50 backdrop-blur-sm bg-zinc-900/80 p-4 flex flex-col">
@@ -58,7 +62,10 @@ export function LeftSidebar() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-700" />
-            <DropdownMenuItem className="hover:bg-zinc-700 focus:bg-zinc-700 cursor-pointer text-red-400">
+            <DropdownMenuItem
+              className="hover:bg-zinc-700 focus:bg-zinc-700 cursor-pointer text-red-400"
+              onClick={() => signOut()}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
@@ -80,7 +87,7 @@ export function LeftSidebar() {
           badge="12"
           isActive={activeItem === "notifications"}
           onClick={() => setActiveItem("notifications")}
-          href="#"
+          href="/notifications"
         />
         <NavItem
           icon={<MessageSquare className="h-5 w-5" />}
@@ -101,7 +108,7 @@ export function LeftSidebar() {
           label="Profile"
           isActive={activeItem === "profile"}
           onClick={() => setActiveItem("profile")}
-          href="#"
+          href={profile ? `/profile/${profile.username}` : "#"}
         />
         <NavItem
           icon={<Compass className="h-5 w-5" />}
@@ -115,7 +122,7 @@ export function LeftSidebar() {
           label="Settings"
           isActive={activeItem === "settings"}
           onClick={() => setActiveItem("settings")}
-          href="#"
+          href="/settings"
         />
       </nav>
 
@@ -135,12 +142,12 @@ export function LeftSidebar() {
       <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
         <div className="flex items-center">
           <Avatar className="h-10 w-10 mr-3">
-            <AvatarImage src="/placeholder.svg?height=40&width=40" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={profile?.avatar_url || "/placeholder.svg?height=40&width=40"} />
+            <AvatarFallback>{profile?.full_name?.[0] || "U"}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-medium text-sm">Username</p>
-            <p className="text-xs text-zinc-500">@username</p>
+            <p className="font-medium text-sm">{profile?.full_name || "User"}</p>
+            <p className="text-xs text-zinc-500">@{profile?.username || "username"}</p>
           </div>
         </div>
         <Button className="w-full mt-3 bg-violet-600 hover:bg-violet-700">Post</Button>

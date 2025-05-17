@@ -11,8 +11,13 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Check, X, Eye, EyeOff, Loader2 } from "lucide-react"
+import { useAuth } from "@/context/auth-context"
+import { supabase } from "@/lib/supabase"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Register() {
+  const { signUp } = useAuth()
+  const { toast } = useToast()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
@@ -21,6 +26,7 @@ export default function Register() {
     username: "",
     email: "",
     password: "",
+    fullName: "",
   })
   const [interests, setInterests] = useState<string[]>([])
 
@@ -40,21 +46,29 @@ export default function Register() {
     "Photography",
   ]
 
-  // Simulated username check
-  const checkUsername = (username: string) => {
+  // Check username availability
+  const checkUsername = async (username: string) => {
     if (username.length < 3) {
       setUsernameAvailable(null)
       return
     }
 
-    // Simulate API call
     setIsLoading(true)
-    setTimeout(() => {
-      // Random availability for demo purposes
-      const isAvailable = username !== "admin" && username !== "turf" && username !== "user"
-      setUsernameAvailable(isAvailable)
+    try {
+      const { data, error } = await supabase.from("profiles").select("username").eq("username", username).maybeSingle()
+
+      if (error) throw error
+      setUsernameAvailable(!data)
+    } catch (error) {
+      console.error("Error checking username:", error)
+      toast({
+        title: "Error",
+        description: "Failed to check username availability",
+        variant: "destructive",
+      })
+    } finally {
       setIsLoading(false)
-    }, 600)
+    }
   }
 
   // Calculate password strength
@@ -114,19 +128,52 @@ export default function Register() {
   }
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!usernameAvailable) return
+    if (!usernameAvailable) {
+      toast({
+        title: "Error",
+        description: "Username is not available",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (passwordStrength < 3) {
+      toast({
+        title: "Weak Password",
+        description: "Please choose a stronger password",
+        variant: "destructive",
+      })
+      return
+    }
 
     setIsLoading(true)
 
-    // Simulate API call for registration
-    setTimeout(() => {
-      console.log("Registration data:", { ...formData, interests })
+    try {
+      await signUp(formData.email, formData.password, {
+        username: formData.username,
+        fullName: formData.fullName,
+        interests,
+      })
+
+      toast({
+        title: "Account created",
+        description: "Your account has been created successfully",
+      })
+
+      router.push("/dashboard")
+    } catch (error: any) {
+      console.error("Error signing up:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create account",
+        variant: "destructive",
+      })
+    } finally {
       setIsLoading(false)
-      router.push("/")
-    }, 1500)
+    }
   }
 
   return (
@@ -150,6 +197,19 @@ export default function Register() {
           <p className="text-zinc-400 mb-6">Create an account to join daily conversations</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name field */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Full Name</label>
+              <Input
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                className="bg-zinc-800/80 border-zinc-700/50 rounded-lg focus-visible:ring-violet-500"
+                placeholder="Your full name"
+                required
+              />
+            </div>
+
             {/* Username field */}
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">Username</label>
@@ -292,6 +352,24 @@ export default function Register() {
               type="button"
               variant="outline"
               className="w-full bg-zinc-800/80 border-zinc-700/50 text-white hover:bg-zinc-800 py-6 rounded-lg"
+              onClick={async () => {
+                try {
+                  const { error } = await supabase.auth.signInWithOAuth({
+                    provider: "google",
+                    options: {
+                      redirectTo: `${window.location.origin}/auth/callback`,
+                    },
+                  })
+                  if (error) throw error
+                } catch (error) {
+                  console.error("Error signing in with Google:", error)
+                  toast({
+                    title: "Error",
+                    description: "Failed to sign in with Google",
+                    variant: "destructive",
+                  })
+                }
+              }}
             >
               <svg className="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path

@@ -6,12 +6,13 @@ import { createContext, useContext, useEffect, useState } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { sendEmailNotification } from "@/lib/email-service"
 
 type AuthContextType = {
   user: User | null
   session: Session | null
   isLoading: boolean
-  signUp: (email: string, password: string, userData: any) => Promise<void>
+  signUp: (email: string, password: string, username: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
@@ -53,46 +54,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const signUp = async (email: string, password: string, userData: any) => {
+  const signUp = async (email: string, password: string, username: string) => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data: { user }, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: userData.fullName,
-            username: userData.username,
-          },
-        },
+            username
+          }
+        }
       })
 
       if (error) throw error
 
-      // Create profile
-      if (data.user) {
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: data.user.id,
-          username: userData.username,
-          full_name: userData.fullName,
-          avatar_url: null,
-        })
+      if (user) {
+        // Create profile
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            username,
+            email,
+            created_at: new Date().toISOString()
+          })
 
         if (profileError) throw profileError
 
-        // Create default user settings
-        const { error: settingsError } = await supabase.from("user_settings").insert({
-          user_id: data.user.id,
-          theme: "dark",
-          notifications_enabled: true,
-          direct_messages_enabled: true,
-          private_profile: false,
-        })
+        // Send welcome email with fun tone
+        try {
+          await sendEmailNotification({
+            userId: user.id,
+            emailType: "welcome",
+            template: "welcome",
+            data: {
+              username: username || email.split('@')[0]
+            }
+          })
+          console.log("Welcome email sent with fun, sarcastic tone!")
+        } catch (error) {
+          console.error("Failed to send welcome email, but we'll pretend it's fine:", error)
+          // Don't block signup if email fails
+        }
 
-        if (settingsError) throw settingsError
+        router.push("/onboarding")
       }
-
-      router.push("/dashboard")
     } catch (error) {
       console.error("Error signing up:", error)
       throw error

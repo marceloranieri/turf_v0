@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-nano app/api/setup-community/route.ts
-
-=======
->>>>>>> f064556771d0c1486da29dcd0ee9111471e9d510
 import { NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
@@ -12,27 +7,15 @@ export async function POST(request: Request) {
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-<<<<<<< HEAD
     // Commented out authentication check temporarily
     /*
-=======
-    // Only check if user is authenticated, not if they're admin
->>>>>>> f064556771d0c1486da29dcd0ee9111471e9d510
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
-<<<<<<< HEAD
     */
-
-    // Rest of the code...
-  } catch (error) {
-    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
-  }
-}
-=======
 
     // Create typing_indicators table
     await supabase.rpc("execute_sql", {
@@ -364,4 +347,3 @@ export async function GET() {
     message: "Use POST to set up real-time functionality",
   })
 }
->>>>>>> f064556771d0c1486da29dcd0ee9111471e9d510

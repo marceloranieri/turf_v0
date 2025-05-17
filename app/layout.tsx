@@ -5,6 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/context/auth-context"
 import { ProfileProvider } from "@/context/profile-context"
 import { TopicsProvider } from "@/context/topics-context"
+import { RealtimeProvider } from "@/context/realtime-context"
 import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -48,8 +49,10 @@ export default function RootLayout({
           <AuthProvider>
             <ProfileProvider>
               <TopicsProvider>
-                {children}
-                <Toaster />
+                <RealtimeProvider>
+                  {children}
+                  <Toaster />
+                </RealtimeProvider>
               </TopicsProvider>
             </ProfileProvider>
           </AuthProvider>

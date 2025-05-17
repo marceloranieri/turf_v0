@@ -110,7 +110,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (error) throw error
-      router.push("/dashboard")
+
+      // Check if user has completed onboarding
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .single()
+
+      if (!profile?.onboarding_completed) {
+        router.push("/onboarding")
+      } else {
+        router.push("/dashboard")
+      }
     } catch (error) {
       console.error("Error signing in:", error)
       throw error

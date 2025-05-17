@@ -19,7 +19,8 @@ import {
   SendHorizontal,
   MoreVertical,
   X,
-  Reply
+  Reply,
+  Info
 } from "lucide-react"
 import { 
   DropdownMenu, 
@@ -33,6 +34,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import debounce from "lodash/debounce"
 import { cn } from "@/lib/utils"
+import { useInView } from "react-intersection-observer"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@/components/ui/tooltip"
 
 type Message = {
   id: string
@@ -78,7 +85,7 @@ export function TopicDetailRealtime({ topicId, initialMessages = [] }: TopicDeta
   const { fetchTopic, fetchMessages, createMessage, voteMessage, addReaction } = useTopics()
   const { user } = useAuth()
   const { supabase } = useSupabase()
-  const { activeTypingUsers, startTyping, stopTyping } = useRealtime()
+  const { activeTypingUsers, startTyping, stopTyping, markMessageAsRead } = useRealtime()
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const highlightedMessageId = searchParams.get("highlight")
@@ -605,139 +612,90 @@ export function TopicDetailRealtime({ topicId, initialMessages = [] }: TopicDeta
   }
 
   // Render message component
-  const renderMessage = (message: Message, isReply = false) => (
-    <div 
-      id={`message-${message.id}`}
-      key={message.id}
-      className={`
-        flex items-start gap-3 p-3 rounded-lg transition-colors duration-300
-        ${isReply ? "ml-12 bg-neutral-900/50" : "bg-neutral-900"}
-      `}
-    >
-      <Avatar
-        src={message.user.avatar_url}
-        alt={message.user.username}
-        size="md"
-        status={message.user.is_online ? "online" : "offline"}
+  const renderMessage = (message: Message, isReply = false) => {
+    const { ref, inView } = useInView({
+      threshold: 0.5,
+      triggerOnce: true
+    })
+    const [readBy, setReadBy] = useState<string[]>([])
+
+    useEffect(() => {
+      if (inView && !isReply && message.user_id !== user?.id) {
+        markMessageAsRead(message.id)
+      }
+    }, [inView, isReply, message.id, markMessageAsRead])
+
+    useEffect(() => {
+      const fetchReadStatus = async () => {
+        const { data } = await supabase
+          .from('message_reads')
+          .select('user_id')
+          .eq('message_id', message.id)
+        
+        if (data) {
+          setReadBy(data.map(read => read.user_id))
+        }
+      }
+
+      fetchReadStatus()
+    }, [message.id])
+
+    return (
+      <div
+        ref={ref}
+        className={`flex ${isReply ? 'justify-end' : 'justify-start'} mb-4`}
       >
-        <AvatarFallback>
-          {message.user.username.slice(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{message.user.username}</span>
-          <span className="text-xs text-gray-400">
-            {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-          </span>
-        </div>
-        
-        <div className="mt-1 break-words">{message.content}</div>
-        
-        {message.image_url && (
-          <div className="mt-2">
-            <img 
-              src={message.image_url} 
-              alt="Attached image" 
-              className="rounded-md max-h-80 object-contain bg-neutral-800"
-            />
-          </div>
-        )}
-        
-        <div className="flex items-center gap-2 mt-2">
-          {/* Vote buttons */}
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-8 w-8 ${message.userVote === "up" ? "text-green-500" : ""}`}
-              onClick={() => handleVote(message.id, true)}
-            >
-              <ArrowUp size={16} />
-            </Button>
-            <span className="text-sm mx-1">
-              {(message.upvotes || 0) - (message.downvotes || 0)}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-8 w-8 ${message.userVote === "down" ? "text-red-500" : ""}`}
-              onClick={() => handleVote(message.id, false)}
-            >
-              <ArrowDown size={16} />
-            </Button>
-          </div>
-          
-          {/* Reply button */}
+        <div
+          className={`flex max-w-[80%] ${
+            isReply ? 'flex-row-reverse' : 'flex-row'
+          } items-end gap-2`}
+        >
           {!isReply && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={() => setReplyTo(message)}
-            >
-              <MessageSquare size={16} className="mr-1" />
-              Reply
-            </Button>
+            <div className="flex-shrink-0">
+              <Avatar>
+                <AvatarImage src={message.user.avatar_url} alt={message.user.username} />
+                <AvatarFallback>{message.user.username[0]}</AvatarFallback>
+              </Avatar>
+            </div>
           )}
-          
-          {/* Reaction button */}
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={() => setShowEmojiPicker(message.id)}
-            >
-              <Smile size={16} className="mr-1" />
-              React
-            </Button>
-          </div>
-          
-          {/* Message actions */}
-          {user?.id === message.user_id && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical size={16} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-neutral-800 text-white border-gray-700">
-                <DropdownMenuItem>Edit</DropdownMenuItem>
-                <DropdownMenuItem className="text-red-400">Delete</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-        
-        {/* Reactions display */}
-        {message.reactions && message.reactions.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {message.reactions.map((reaction) => (
-              <div
-                key={reaction.emoji}
-                className={cn(
-                  "flex items-center bg-neutral-800 rounded-full px-2 py-1 text-sm",
-                  reaction.emoji === "👍" && user?.id === reaction.emoji && "bg-green-500 text-green-50"
+          <div
+            className={`rounded-lg px-4 py-2 ${
+              isReply
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-medium">{message.user.username}</span>
+              <span className="text-xs opacity-70">
+                {new Date(message.created_at).toLocaleTimeString()}
+              </span>
+            </div>
+            <p className="text-sm">{message.content}</p>
+            {readBy.length > 0 && (
+              <div className="flex items-center gap-1 mt-1 text-xs opacity-70">
+                <span>Read by {readBy.length}</span>
+                {readBy.length > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="flex flex-col gap-1">
+                        {readBy.map(userId => (
+                          <span key={userId}>{userId}</span>
+                        ))}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
-              >
-                <span className="mr-1">{reaction.emoji}</span>
-                <span className="text-xs">{reaction.count}</span>
               </div>
-            ))}
+            )}
           </div>
-        )}
-        
-        {/* Replies */}
-        {!isReply && message.replies && message.replies.length > 0 && (
-          <div className="mt-3 space-y-3">
-            {message.replies.map((reply) => renderMessage(reply, true))}
-          </div>
-        )}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="flex flex-col h-full">

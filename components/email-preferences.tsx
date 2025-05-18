@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useSupabase } from "@/lib/supabase-provider"
 import { useAuth } from "@/context/auth-context"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { toast } from "sonner"
 
 export function EmailPreferences() {
   const { supabase } = useSupabase()
   const { user } = useAuth()
-  const { toast } = useToast()
+  const { toast: useToastToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [email, setEmail] = useState("")
@@ -24,103 +26,28 @@ export function EmailPreferences() {
     direct_messages: true,
     marketing: false
   })
+  const supabaseAuth = createClientComponentClient()
 
-  useEffect(() => {
-    if (!user) return
-
-    const fetchPreferences = async () => {
-      setLoading(true)
-      
-      try {
-        // Get user email
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("id", user.id)
-          .single()
-        
-        if (profileData?.email) {
-          setEmail(profileData.email)
-        } else {
-          // Fallback to auth email
-          const { data } = await supabase.auth.getUser()
-          setEmail(data.user?.email || "")
-        }
-        
-        // Get email preferences
-        const { data, error } = await supabase
-          .from("email_preferences")
-          .select("*")
-          .eq("user_id", user.id)
-          .single()
-        
-        if (error && error.code !== "PGRST116") {
-          console.error("Error fetching email preferences:", error)
-          return
-        }
-        
-        if (data) {
-          setPreferences({
-            mentions: data.mentions,
-            replies: data.replies,
-            new_followers: data.new_followers,
-            new_posts: data.new_posts,
-            direct_messages: data.direct_messages,
-            marketing: data.marketing
-          })
-        } else {
-          // Create default preferences
-          await supabase.from("email_preferences").insert({
-            user_id: user.id,
-            ...preferences
-          })
-        }
-      } catch (error) {
-        console.error("Error setting up preferences:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPreferences()
-  }, [supabase, user])
-
-  const handleSavePreferences = async () => {
-    if (!user) return
-    
+  const updatePreference = async (key: string, value: boolean) => {
     setSaving(true)
-    
     try {
-      // Update email in profile
-      await supabase
-        .from("profiles")
-        .update({ email })
-        .eq("id", user.id)
-      
-      // Update email preferences
+      const { data: { user } } = await supabaseAuth.auth.getUser()
+      if (!user) throw new Error("Not authenticated")
+
       const { error } = await supabase
         .from("email_preferences")
         .upsert({
           user_id: user.id,
-          ...preferences,
-          updated_at: new Date().toISOString()
+          [key]: value
         })
-      
+
       if (error) throw error
-      
-      toast({
-        title: "Preferences saved",
-        description: "Your email preferences have been updated.",
-        duration: 3000
-      })
+
+      setPreferences(prev => ({ ...prev, [key]: value }))
+      toast.success("Preferences updated!")
     } catch (error) {
-      console.error("Error saving preferences:", error)
-      toast({
-        title: "Error saving preferences",
-        description: "There was a problem saving your preferences.",
-        variant: "destructive",
-        duration: 3000
-      })
+      console.error("Error updating preferences:", error)
+      toast.error("Failed to update preferences")
     } finally {
       setSaving(false)
     }
@@ -175,7 +102,8 @@ export function EmailPreferences() {
             <Switch
               id="mentions"
               checked={preferences.mentions}
-              onCheckedChange={(checked) => setPreferences({ ...preferences, mentions: checked })}
+              onCheckedChange={(checked) => updatePreference("mentions", checked)}
+              disabled={saving}
               className="data-[state=checked]:bg-[#4CAF50]"
             />
           </div>
@@ -188,7 +116,8 @@ export function EmailPreferences() {
             <Switch
               id="replies"
               checked={preferences.replies}
-              onCheckedChange={(checked) => setPreferences({ ...preferences, replies: checked })}
+              onCheckedChange={(checked) => updatePreference("replies", checked)}
+              disabled={saving}
               className="data-[state=checked]:bg-[#4CAF50]"
             />
           </div>
@@ -201,7 +130,8 @@ export function EmailPreferences() {
             <Switch
               id="new_followers"
               checked={preferences.new_followers}
-              onCheckedChange={(checked) => setPreferences({ ...preferences, new_followers: checked })}
+              onCheckedChange={(checked) => updatePreference("new_followers", checked)}
+              disabled={saving}
               className="data-[state=checked]:bg-[#4CAF50]"
             />
           </div>
@@ -214,7 +144,8 @@ export function EmailPreferences() {
             <Switch
               id="new_posts"
               checked={preferences.new_posts}
-              onCheckedChange={(checked) => setPreferences({ ...preferences, new_posts: checked })}
+              onCheckedChange={(checked) => updatePreference("new_posts", checked)}
+              disabled={saving}
               className="data-[state=checked]:bg-[#4CAF50]"
             />
           </div>
@@ -227,7 +158,8 @@ export function EmailPreferences() {
             <Switch
               id="direct_messages"
               checked={preferences.direct_messages}
-              onCheckedChange={(checked) => setPreferences({ ...preferences, direct_messages: checked })}
+              onCheckedChange={(checked) => updatePreference("direct_messages", checked)}
+              disabled={saving}
               className="data-[state=checked]:bg-[#4CAF50]"
             />
           </div>
@@ -240,14 +172,15 @@ export function EmailPreferences() {
             <Switch
               id="marketing"
               checked={preferences.marketing}
-              onCheckedChange={(checked) => setPreferences({ ...preferences, marketing: checked })}
+              onCheckedChange={(checked) => updatePreference("marketing", checked)}
+              disabled={saving}
               className="data-[state=checked]:bg-[#4CAF50]"
             />
           </div>
         </div>
         
         <Button 
-          onClick={handleSavePreferences} 
+          onClick={() => {}} 
           disabled={saving}
           className="mt-4 w-full bg-[#4CAF50] hover:bg-[#3d8b40]"
         >

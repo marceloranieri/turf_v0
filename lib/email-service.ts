@@ -1,9 +1,10 @@
-import { createClient } from "@supabase/supabase-js"
+'use server';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Email templates with fun, casual tone
 const templates = {
@@ -191,119 +192,85 @@ const templates = {
   }
 }
 
-// Check if user has opted in for this email type
-async function checkEmailPreference(userId: string, emailType: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("email_preferences")
-      .select(emailType)
-      .eq("user_id", userId)
-      .single()
-
-    if (error) {
-      console.error("Error checking email preferences:", error)
-      return false
-    }
-
-    return data?.[emailType] ?? false
-  } catch (error) {
-    console.error("Error checking email preference:", error)
-    return false
+// Get email template
+function getEmailTemplate(emailType: string, template?: string, data?: Record<string, any>): { subject: string; html: (data: any) => string; text?: string } | null {
+  if (template && templates[template]) {
+    return templates[template]
   }
+  return templates[emailType] || null
 }
 
-// Get user email from profiles table
-async function getUserEmail(userId: string): Promise<string | null> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("profiles")
-      .select("email")
-      .eq("id", userId)
-      .single()
-
-    if (error || !data?.email) {
-      // Fallback to auth.users
-      const { data: authData, error: authError } = await supabaseAdmin
-        .auth
-        .admin
-        .getUserById(userId)
-
-      if (authError) {
-        console.error("Error getting user email:", authError)
-        return null
-      }
-
-      return authData.user?.email || null
-    }
-
-    return data.email
-  } catch (error) {
-    console.error("Error getting user email:", error)
-    return null
-  }
-}
-
-// Send email using Resend API
+// Send email using Resend API only
 export async function sendEmailNotification({
   userId,
   emailType,
   subject,
-  template = "notification",
-  data = {}
+  template,
+  data
 }: {
   userId: string
   emailType: string
   subject?: string
-  template?: "welcome" | "notification"
-  data?: any
+  template?: string
+  data?: Record<string, any>
 }) {
   try {
-    // Skip if missing API key
-    if (!process.env.RESEND_API_KEY) {
-      console.warn("Missing RESEND_API_KEY environment variable")
-      return false
-    }
-
-    // Skip if user has opted out (except for welcome emails)
-    if (template !== "welcome") {
-      const hasOptedIn = await checkEmailPreference(userId, emailType)
-      if (!hasOptedIn) {
-        return false
-      }
-    }
-
-    // Get user email
-    const email = await getUserEmail(userId)
-    if (!email) {
-      console.warn("No email found for user", userId)
-      return false
-    }
-
-    // Use custom subject or default from template
-    const emailSubject = subject || templates[template].subject
-
-    // Prepare email content
-    const htmlContent = templates[template].html(data)
-
-    // Send email with Resend
-    const resend = await import('resend').then(module => module.default)
-    const resendClient = new resend(process.env.RESEND_API_KEY)
+    const supabase = createRouteHandlerClient({ cookies })
     
-    const { data: response, error } = await resendClient.emails.send({
-      from: `Turf <${process.env.RESEND_FROM_EMAIL || 'noreply@example.com'}>`,
-      to: email,
-      subject: emailSubject,
-      html: htmlContent
+    // Get user's email preferences
+    const { data: preferences, error: prefError } = await supabase
+      .from("email_preferences")
+      .select("*")
+      .eq("user_id", userId)
+      .single()
+    
+    if (prefError) {
+      console.error("Error fetching email preferences:", prefError)
+      return false
+    }
+    
+    // Check if user has opted out of this type of email
+    if (!preferences[emailType]) {
+      console.log(`User ${userId} has opted out of ${emailType} emails`)
+      return false
+    }
+    
+    // Get user's email
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", userId)
+      .single()
+    
+    if (profileError || !profile?.email) {
+      console.error("Error fetching user email:", profileError)
+      return false
+    }
+
+    // Get email template
+    const emailTemplate = getEmailTemplate(emailType, template, data)
+    if (!emailTemplate) {
+      console.error(`No template found for ${emailType}`)
+      return false
+    }
+
+    // Send email using Resend
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL!,
+      to: profile.email,
+      subject: subject || emailTemplate.subject,
+      html: emailTemplate.html,
+      text: emailTemplate.text
     })
 
-    if (error) {
-      console.error("Error sending email:", error)
+    if (emailError) {
+      console.error("Error sending email:", emailError)
       return false
     }
 
     return true
   } catch (error) {
-    console.error("Error sending email notification:", error)
+    console.error("Error in sendEmailNotification:", error)
     return false
   }
 } 

@@ -7,4 +7,4 @@ export default function SettingsPage() {
       <SettingsView />
     </DashboardLayout>
   )
-}
+} 

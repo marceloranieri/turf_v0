@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { TopicFeed } from "@/components/topic-feed"
 

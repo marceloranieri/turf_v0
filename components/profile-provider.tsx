@@ -1,77 +1,89 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { Profile, getProfileById } from "@/lib/profile-service";
-import { useSupabase } from "@/lib/supabase-provider";
+import { createContext, useContext, useState, useEffect } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Profile } from "@/lib/profile-service";
 
-// Context type
-interface ProfileContextType {
-  profile: Profile | null;
-  loading: boolean;
-  refreshProfile: () => Promise<void>;
-}
+// Create a default value for the context
+const defaultProfileContext = {
+  profile: null,
+  loading: true,
+  refreshProfile: async () => {},
+};
 
-// Create context
-const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
+// Create the context with the default value
+const ProfileContext = createContext(defaultProfileContext);
 
-// Provider component
-export const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
+export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { supabase } = useSupabase();
+  const supabase = createClientComponentClient();
   
-  // Load profile on mount and setup realtime updates
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          setLoading(false);
-          return;
-        }
-        
-        const profile = await getProfileById(session.user.id);
-        setProfile(profile);
-        
-        // Set up realtime subscription
-        const channel = supabase
-          .channel('profile-changes')
-          .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'profiles',
-            filter: `id=eq.${session.user.id}`,
-          }, (payload) => {
-            setProfile(payload.new as Profile);
-          })
-          .subscribe();
-          
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      } catch (error) {
-        console.error('Error in profile provider:', error);
-      } finally {
+  // Fetch profile data
+  const fetchProfile = async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session?.session) {
         setLoading(false);
+        return;
       }
-    };
-    
-    loadProfile();
-  }, [supabase]);
-  
-  // Refresh profile
-  const refreshProfile = async () => {
-    if (!profile) return;
-    
-    const updatedProfile = await getProfileById(profile.id);
-    setProfile(updatedProfile);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          followers:follower_relations(count),
+          following:following_relations(count),
+          posts:posts(count)
+        `)
+        .eq('id', session.session.user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+      
+      setProfile(data as Profile);
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   
-  // Context value
+  useEffect(() => {
+    fetchProfile();
+    
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('profile-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'profiles',
+        filter: profile ? `id=eq.${profile.id}` : undefined,
+      }, (payload) => {
+        setProfile(payload.new as Profile);
+      })
+      .subscribe();
+    
+    // Set up auth state change subscription
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      fetchProfile();
+    });
+    
+    return () => {
+      supabase.removeChannel(channel);
+      authListener?.subscription.unsubscribe();
+    };
+  }, [profile?.id]);
+  
   const value = {
     profile,
     loading,
-    refreshProfile,
+    refreshProfile: fetchProfile,
   };
   
   return (
@@ -79,13 +91,16 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
       {children}
     </ProfileContext.Provider>
   );
-};
+}
 
-// Hook to use the profile context
-export const useProfile = () => {
+// Create a hook that will return default values when used outside of context
+export function useProfile() {
   const context = useContext(ProfileContext);
-  if (context === undefined) {
-    throw new Error('useProfile must be used within a ProfileProvider');
+  
+  if (!context) {
+    // Return default values instead of throwing an error
+    return defaultProfileContext;
   }
+  
   return context;
-}; 
+} 

@@ -173,7 +173,7 @@ export default function Login() {
                   const { error } = await supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: {
-                      redirectTo: `${window.location.origin}/auth/callback`,
+                      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
                     },
                   })
                   if (error) throw error
@@ -205,7 +205,7 @@ export default function Login() {
                   fill="#EA4335"
                 />
               </svg>
-              Sign in with Google
+              Continue with Google
             </Button>
           </form>
 

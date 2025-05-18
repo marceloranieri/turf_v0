@@ -8,9 +8,10 @@ import { useRouter } from "next/navigation"
 import { ParticleBackground } from "@/components/particle-background"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Check, X, Eye, EyeOff, Loader2, Checkbox } from "lucide-react"
+import { Check, X, Eye, EyeOff, Loader2 } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
@@ -22,6 +23,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -29,7 +31,6 @@ export default function Register() {
     fullName: "",
   })
   const [interests, setInterests] = useState<string[]>([])
-  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   // Options for the interests selector
   const interestOptions = [
@@ -131,6 +132,15 @@ export default function Register() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!acceptedTerms) {
+      toast({
+        title: "Error",
+        description: "You must accept the Terms of Service and Privacy Policy",
+        variant: "destructive",
+      })
+      return
+    }
 
     if (!usernameAvailable) {
       toast({

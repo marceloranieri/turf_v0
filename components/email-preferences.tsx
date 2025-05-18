@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useSupabase } from "@/lib/supabase-provider"
 import { useAuth } from "@/context/auth-context"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { toast } from "sonner"
 
 export function EmailPreferences() {
@@ -26,12 +25,11 @@ export function EmailPreferences() {
     direct_messages: true,
     marketing: false
   })
-  const supabaseAuth = createClientComponentClient()
 
   const updatePreference = async (key: string, value: boolean) => {
     setSaving(true)
     try {
-      const { data: { user } } = await supabaseAuth.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not authenticated")
 
       const { error } = await supabase

@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/auth-context"
 import { ProfileProvider } from "@/context/profile-context"
 import { TopicsProvider } from "@/context/topics-context"
 import { Toaster } from "@/components/ui/toaster"
+import { SupabaseProvider } from "@/lib/supabase-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -45,14 +46,16 @@ export default function RootLayout({
             </div>
           </div>
         ) : (
-          <AuthProvider>
-            <ProfileProvider>
-              <TopicsProvider>
-                {children}
-                <Toaster />
-              </TopicsProvider>
-            </ProfileProvider>
-          </AuthProvider>
+          <SupabaseProvider>
+            <AuthProvider>
+              <ProfileProvider>
+                <TopicsProvider>
+                  {children}
+                  <Toaster />
+                </TopicsProvider>
+              </ProfileProvider>
+            </AuthProvider>
+          </SupabaseProvider>
         )}
       </body>
     </html>

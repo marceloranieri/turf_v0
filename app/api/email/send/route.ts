@@ -1,9 +1,9 @@
+export const runtime = 'nodejs'
+
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
 import { sendEmailNotification } from "@/lib/email-service"
-
-export const runtime = 'edge'
 
 export async function POST(req: NextRequest) {
   try {

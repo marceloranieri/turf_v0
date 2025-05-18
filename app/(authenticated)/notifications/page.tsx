@@ -1,10 +1,12 @@
+"use client";
+
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { NotificationsView } from "@/components/notifications-view"
+import { NotificationsList } from "@/components/notifications-list"
 
 export default function NotificationsPage() {
   return (
     <DashboardLayout>
-      <NotificationsView />
+      <NotificationsList />
     </DashboardLayout>
   )
 }

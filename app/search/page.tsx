@@ -1,3 +1,5 @@
+"use client";
+
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { SearchView } from "@/components/search-view"
 

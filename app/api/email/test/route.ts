@@ -1,27 +1,27 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmailNotification } from '@/lib/email-service';
+import sgMail from '@sendgrid/mail';
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, emailType = 'notification', subject, template, data } = await req.json();
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
-    }
-    const success = await sendEmailNotification({
-      userId,
-      emailType,
+    const { to, subject, text, html } = await req.json();
+
+    sgMail.setApiKey(process.env.EMAIL_SERVER_PASSWORD || '');
+    
+    const message = {
+      to,
+      from: process.env.EMAIL_FROM || 'team@turfyeah.com',
       subject,
-      template,
-      data: data || { content: 'This is a test email from the Turf API route!', link: '/' }
-    });
-    if (!success) {
-      return NextResponse.json({ error: 'Failed to send test email' }, { status: 500 });
-    }
+      text,
+      html,
+    };
+    
+    await sgMail.send(message);
+    
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in test email API route:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error sending email:', error);
+    return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
   }
 } 

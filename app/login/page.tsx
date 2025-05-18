@@ -221,8 +221,8 @@ export default function Login() {
 
           {/* Legal links */}
           <div className="mt-6 text-center text-sm text-zinc-500">
-            <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300 mr-4">Terms of Service</Link>
-            <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300">Privacy Policy</Link>
+            <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300 mr-4" target="_blank" rel="noopener noreferrer">Terms of Service</Link>
+            <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
           </div>
         </div>
 

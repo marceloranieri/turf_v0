@@ -7,6 +7,11 @@ const publicPaths = [
   '/login',
   '/register',
   '/auth/callback',
+  '/legal/terms',
+  '/legal/privacy',
+  '/legal/data-deletion',
+  '/legal/accept-terms',
+  '/legal/terms-update',
   '/api/', // Allow API routes to handle their own auth
   '/_next/', // Next.js assets
   '/favicon.ico',

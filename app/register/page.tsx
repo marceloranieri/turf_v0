@@ -358,7 +358,7 @@ export default function Register() {
                 className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600"
               />
               <label htmlFor="terms" className="text-sm text-zinc-400">
-                I agree to the <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300" target="_blank">Terms of Service</Link> and <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank">Privacy Policy</Link>
+                I agree to the <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
               </label>
             </div>
 
@@ -419,7 +419,7 @@ export default function Register() {
 
             {/* Terms note for Google sign-up */}
             <div className="text-xs text-center mt-2 text-zinc-500">
-              By continuing, you agree to our <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300" target="_blank">Terms of Service</Link> and <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank">Privacy Policy</Link>
+              By continuing, you agree to our <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
             </div>
           </form>
 

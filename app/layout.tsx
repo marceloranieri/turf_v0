@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/context/auth-context"
-import { ProfileProvider } from "@/components/profile-provider"
 import { TopicsProvider } from "@/context/topics-context"
 import { Toaster } from "@/components/ui/toaster"
 import { SupabaseProvider } from "@/lib/supabase-provider"
@@ -49,14 +48,12 @@ export default function RootLayout({
         ) : (
           <SupabaseProvider>
             <AuthProvider>
-              <ProfileProvider>
-                <TopicsProvider>
-                  <BookmarkProvider>
-                    {children}
-                    <Toaster />
-                  </BookmarkProvider>
-                </TopicsProvider>
-              </ProfileProvider>
+              <TopicsProvider>
+                <BookmarkProvider>
+                  {children}
+                  <Toaster />
+                </BookmarkProvider>
+              </TopicsProvider>
             </AuthProvider>
           </SupabaseProvider>
         )}

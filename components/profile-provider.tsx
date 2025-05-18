@@ -93,13 +93,17 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Create a hook that will return default values when used outside of context
+// Create a hook that will handle SSR gracefully
 export function useProfile() {
   const context = useContext(ProfileContext);
   
-  if (!context) {
-    // Return default values instead of throwing an error
+  if (typeof window === 'undefined') {
+    // Return default empty values during SSR
     return defaultProfileContext;
+  }
+  
+  if (context === undefined) {
+    throw new Error('useProfile must be used within a ProfileProvider');
   }
   
   return context;

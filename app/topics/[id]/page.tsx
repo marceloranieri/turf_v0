@@ -1,10 +1,10 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { TopicDetailRealtime } from "@/components/topic-detail-realtime"
+import { TopicDetail } from "@/components/topic-detail"
 
 export default function TopicDetailPage({ params }: { params: { id: string } }) {
   return (
     <DashboardLayout>
-      <TopicDetailRealtime topicId={params.id} />
+      <TopicDetail topicId={params.id} />
     </DashboardLayout>
   )
 }

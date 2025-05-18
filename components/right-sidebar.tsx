@@ -10,15 +10,10 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Users } from "lucide-react"
-import { NotificationBell } from "@/components/notification-bell"
 
 export function RightSidebar() {
   return (
     <div className="w-80 border-l border-zinc-800/50 backdrop-blur-sm bg-zinc-900/80 p-4 overflow-y-auto">
-      <div className="flex justify-end mb-4">
-        <NotificationBell />
-      </div>
-
       <Tabs defaultValue="trending">
         <TabsList className="w-full bg-zinc-800/50 mb-4">
           <TabsTrigger value="trending" className="flex-1">

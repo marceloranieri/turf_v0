@@ -1,118 +1,174 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bell } from "lucide-react"
-import { useRealtime } from "@/context/realtime-context"
-import { useRouter } from "next/navigation"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/context/auth-context"
+import { useRealtime } from "@/context/realtime-context"
+import { useSupabaseClient } from "@supabase/auth-helpers-react"
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useRealtime()
-  const router = useRouter()
-  const [isOpen, setIsOpen] = useState(false)
+  const { user } = useAuth()
+  const { setupNotificationSubscription } = useRealtime()
+  const supabase = useSupabaseClient()
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
 
-  const handleNotificationClick = async (
-    notificationId: string,
-    topicId: string,
-    messageId?: string
-  ) => {
-    await markAsRead(notificationId)
-    setIsOpen(false)
-    
-    const url = messageId 
-      ? `/topics/${topicId}?highlight=${messageId}` 
-      : `/topics/${topicId}`
-      
-    router.push(url)
+  // Fetch notifications on mount
+  useEffect(() => {
+    if (!user) return
+
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select(`
+          *,
+          sender:sender_id (
+            username,
+            avatar_url
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10)
+
+      if (error) {
+        console.error("Error fetching notifications:", error)
+        return
+      }
+
+      setNotifications(data || [])
+      setUnreadCount(data?.filter((n) => !n.read).length || 0)
+    }
+
+    fetchNotifications()
+
+    // Set up real-time subscription
+    const unsubscribe = setupNotificationSubscription((payload) => {
+      if (payload.eventType === "INSERT") {
+        // Fetch the new notification with sender data
+        supabase
+          .from("notifications")
+          .select(`
+            *,
+            sender:sender_id (
+              username,
+              avatar_url
+            )
+          `)
+          .eq("id", payload.new.id)
+          .single()
+          .then(({ data, error }) => {
+            if (error) {
+              console.error("Error fetching new notification:", error)
+              return
+            }
+
+            if (data) {
+              setNotifications((prev) => [data, ...prev])
+              setUnreadCount((prev) => prev + 1)
+            }
+          })
+      }
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [user, setupNotificationSubscription, supabase])
+
+  const markAsRead = async (id: string) => {
+    if (!user) return
+
+    const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id)
+
+    if (error) {
+      console.error("Error marking notification as read:", error)
+      return
+    }
+
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+    setUnreadCount((prev) => prev - 1)
+  }
+
+  const markAllAsRead = async () => {
+    if (!user) return
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", user.id)
+      .eq("read", false)
+
+    if (error) {
+      console.error("Error marking all notifications as read:", error)
+      return
+    }
+
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    setUnreadCount(0)
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full p-0 h-10 w-10"
-        >
-          <Bell size={20} />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
+            <Badge
+              className="absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center p-0 bg-red-500 text-white"
+              variant="default"
+            >
+              {unreadCount}
+            </Badge>
           )}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 bg-neutral-900 text-white border-gray-700">
-        <div className="flex items-center justify-between p-3 border-b border-gray-700">
-          <h3 className="font-medium">Notifications</h3>
-          {notifications.some(n => !n.is_read) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-blue-400 hover:text-blue-300"
-              onClick={() => markAllAsRead()}
-            >
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80">
+        <DropdownMenuLabel className="flex justify-between items-center">
+          <span>Notifications</span>
+          {unreadCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={markAllAsRead}>
               Mark all as read
             </Button>
           )}
-        </div>
-        
-        <div className="max-h-96 overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="p-6 text-center text-gray-400">
-              No notifications yet
-            </div>
-          ) : (
-            <ul>
-              {notifications.map((notification) => (
-                <li 
-                  key={notification.id}
-                  className={`
-                    p-3 border-b border-gray-700 hover:bg-neutral-800 cursor-pointer
-                    ${!notification.is_read ? "bg-neutral-800/50" : ""}
-                  `}
-                  onClick={() => 
-                    handleNotificationClick(
-                      notification.id, 
-                      notification.topic_id,
-                      notification.message_id
-                    )
-                  }
-                >
-                  <div className="flex items-start gap-3">
-                    <img 
-                      src={notification.sender_avatar_url} 
-                      alt={notification.sender_username}
-                      className="w-10 h-10 rounded-full" 
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <p className="font-medium">{notification.sender_username}</p>
-                        <span className="text-xs text-gray-400">
-                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-300">
-                        {notification.type === "mention" && "mentioned you in "}
-                        {notification.type === "reply" && "replied to your message in "}
-                        {notification.type === "reaction" && "reacted to your message in "}
-                        <span className="font-medium">{notification.topic_title}</span>
-                      </p>
-                      {notification.message_content && (
-                        <p className="mt-1 text-sm text-gray-400 truncate">
-                          {notification.message_content}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {notifications.length === 0 ? (
+          <div className="py-4 text-center text-zinc-500">No notifications</div>
+        ) : (
+          notifications.map((notification) => (
+            <DropdownMenuItem
+              key={notification.id}
+              className={`flex items-start p-3 cursor-default ${!notification.read ? "bg-zinc-800/50" : ""}`}
+              onClick={() => markAsRead(notification.id)}
+            >
+              <Avatar className="h-8 w-8 mr-3 flex-shrink-0">
+                <AvatarImage src={notification.sender?.avatar_url || "/placeholder.svg"} />
+                <AvatarFallback>{notification.sender?.username?.[0] || "U"}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm">
+                  <span className="font-medium">{notification.sender?.username || "Someone"}</span>{" "}
+                  <span>{notification.content}</span>
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">{new Date(notification.created_at).toLocaleString()}</p>
+              </div>
+              {!notification.read && <div className="h-2 w-2 bg-violet-500 rounded-full flex-shrink-0 mt-1"></div>}
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

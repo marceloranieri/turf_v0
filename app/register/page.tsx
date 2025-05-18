@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Check, X, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Check, X, Eye, EyeOff, Loader2, Checkbox } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
@@ -29,6 +29,7 @@ export default function Register() {
     fullName: "",
   })
   const [interests, setInterests] = useState<string[]>([])
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   // Options for the interests selector
   const interestOptions = [
@@ -325,7 +326,7 @@ export default function Register() {
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-6 rounded-lg transition-all hover:scale-[1.02] mt-6"
-              disabled={isLoading || usernameAvailable === false}
+              disabled={isLoading || usernameAvailable === false || !acceptedTerms}
             >
               {isLoading ? (
                 <>
@@ -336,6 +337,20 @@ export default function Register() {
                 "Create your account"
               )}
             </Button>
+
+            {/* Terms acceptance checkbox */}
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox 
+                id="terms" 
+                required
+                checked={acceptedTerms}
+                onCheckedChange={setAcceptedTerms}
+                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600"
+              />
+              <label htmlFor="terms" className="text-sm text-zinc-400">
+                I agree to the <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300" target="_blank">Terms of Service</Link> and <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank">Privacy Policy</Link>
+              </label>
+            </div>
 
             {/* Divider */}
             <div className="relative my-6">
@@ -391,6 +406,11 @@ export default function Register() {
               </svg>
               Sign up with Google
             </Button>
+
+            {/* Terms note for Google sign-up */}
+            <div className="text-xs text-center mt-2 text-zinc-500">
+              By continuing, you agree to our <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300" target="_blank">Terms of Service</Link> and <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank">Privacy Policy</Link>
+            </div>
           </form>
 
           {/* Sign in link */}

@@ -218,6 +218,12 @@ export default function Login() {
               </Link>
             </p>
           </div>
+
+          {/* Legal links */}
+          <div className="mt-6 text-center text-sm text-zinc-500">
+            <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300 mr-4">Terms of Service</Link>
+            <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300">Privacy Policy</Link>
+          </div>
         </div>
 
         {/* User count and avatars */}

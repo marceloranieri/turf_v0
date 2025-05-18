@@ -2,9 +2,10 @@
 
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
-import { Resend } from 'resend'
+import sgMail from '@sendgrid/mail'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Initialize SendGrid
+sgMail.setApiKey(process.env.EMAIL_SERVER_PASSWORD || '')
 
 // Email templates with fun, casual tone
 const templates = {
@@ -200,7 +201,24 @@ function getEmailTemplate(emailType: string, template?: string, data?: Record<st
   return templates[emailType] || null
 }
 
-// Send email using Resend API only
+// Get user email from Supabase
+async function getUserEmail(userId: string): Promise<string | null> {
+  const supabase = createRouteHandlerClient({ cookies })
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('email')
+    .eq('id', userId)
+    .single()
+
+  if (error || !user) {
+    console.error('Error fetching user email:', error)
+    return null
+  }
+
+  return user.email
+}
+
+// Send email notification
 export async function sendEmailNotification({
   userId,
   emailType,
@@ -215,62 +233,34 @@ export async function sendEmailNotification({
   data?: Record<string, any>
 }) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get user's email preferences
-    const { data: preferences, error: prefError } = await supabase
-      .from("email_preferences")
-      .select("*")
-      .eq("user_id", userId)
-      .single()
-    
-    if (prefError) {
-      console.error("Error fetching email preferences:", prefError)
-      return false
-    }
-    
-    // Check if user has opted out of this type of email
-    if (!preferences[emailType]) {
-      console.log(`User ${userId} has opted out of ${emailType} emails`)
-      return false
-    }
-    
     // Get user's email
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("id", userId)
-      .single()
-    
-    if (profileError || !profile?.email) {
-      console.error("Error fetching user email:", profileError)
+    const userEmail = await getUserEmail(userId)
+    if (!userEmail) {
+      console.error('No email found for user:', userId)
       return false
     }
 
     // Get email template
     const emailTemplate = getEmailTemplate(emailType, template, data)
     if (!emailTemplate) {
-      console.error(`No template found for ${emailType}`)
+      console.error('No template found for email type:', emailType)
       return false
     }
 
-    // Send email using Resend
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL!,
-      to: profile.email,
+    // Prepare email content
+    const emailContent = {
+      to: userEmail,
+      from: process.env.EMAIL_FROM || 'team@turfyeah.com',
       subject: subject || emailTemplate.subject,
-      html: emailTemplate.html,
-      text: emailTemplate.text
-    })
-
-    if (emailError) {
-      console.error("Error sending email:", emailError)
-      return false
+      html: emailTemplate.html(data || {}),
+      text: emailTemplate.text ? emailTemplate.text(data || {}) : undefined
     }
 
+    // Send email using SendGrid
+    await sgMail.send(emailContent)
     return true
   } catch (error) {
-    console.error("Error in sendEmailNotification:", error)
+    console.error('Error sending email:', error)
     return false
   }
 } 

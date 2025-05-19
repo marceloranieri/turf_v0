@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -17,30 +18,52 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
 
-interface AccountSettingsProps {
-  onChangesMade: () => void
-}
-
-export function AccountSettings({ onChangesMade }: AccountSettingsProps) {
+export function AccountSettings() {
+  const { toast } = useToast()
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [privateProfile, setPrivateProfile] = useState(false)
   const [directMessagePermission, setDirectMessagePermission] = useState("everyone")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    fullName: "",
+  })
 
   const handleTwoFactorToggle = (checked: boolean) => {
     setTwoFactorEnabled(checked)
-    onChangesMade()
   }
 
   const handlePrivateProfileToggle = (checked: boolean) => {
     setPrivateProfile(checked)
-    onChangesMade()
   }
 
   const handleDirectMessageChange = (value: string) => {
     setDirectMessagePermission(value)
-    onChangesMade()
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      // TODO: Implement account update logic
+      toast({
+        title: "Success",
+        description: "Your account settings have been updated",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update account settings",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -229,6 +252,40 @@ export function AccountSettings({ onChangesMade }: AccountSettingsProps) {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Saving..." : "Save Changes"}
+        </Button>
+      </form>
     </div>
   )
 }

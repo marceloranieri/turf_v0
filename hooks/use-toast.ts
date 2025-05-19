@@ -2,6 +2,7 @@
 
 // Inspired by react-hot-toast library
 import * as React from "react"
+import { useState, useCallback } from "react"
 
 import type {
   ToastActionElement,
@@ -171,24 +172,18 @@ function toast({ ...props }: Toast) {
   }
 }
 
-function useToast() {
-  const [state, setState] = React.useState<State>(memoryState)
+export function useToast() {
+  const [toasts, setToasts] = useState<ToastProps[]>([])
 
-  React.useEffect(() => {
-    listeners.push(setState)
-    return () => {
-      const index = listeners.indexOf(setState)
-      if (index > -1) {
-        listeners.splice(index, 1)
-      }
-    }
-  }, [state])
+  const toast = useCallback(({ title, description, variant = "default" }: ToastProps) => {
+    const newToast = { title, description, variant }
+    setToasts((prev) => [...prev, newToast])
 
-  return {
-    ...state,
-    toast,
-    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
-  }
+    // Auto remove toast after 5 seconds
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t !== newToast))
+    }, 5000)
+  }, [])
+
+  return { toast, toasts }
 }
-
-export { useToast, toast }

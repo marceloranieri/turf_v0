@@ -17,14 +17,9 @@ export function EmailPreferences() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [email, setEmail] = useState("")
-  const [preferences, setPreferences] = useState({
-    mentions: true,
-    replies: true,
-    new_followers: true,
-    new_posts: true,
-    direct_messages: true,
-    marketing: false
-  })
+  const [marketingEmails, setMarketingEmails] = useState(false)
+  const [newsletterEmails, setNewsletterEmails] = useState(true)
+  const [notificationEmails, setNotificationEmails] = useState(true)
 
   const updatePreference = async (key: string, value: boolean) => {
     setSaving(true)
@@ -41,7 +36,13 @@ export function EmailPreferences() {
 
       if (error) throw error
 
-      setPreferences(prev => ({ ...prev, [key]: value }))
+      if (key === "marketing") {
+        setMarketingEmails(value)
+      } else if (key === "newsletter") {
+        setNewsletterEmails(value)
+      } else if (key === "notification") {
+        setNotificationEmails(value)
+      }
       toast.success("Preferences updated!")
     } catch (error) {
       console.error("Error updating preferences:", error)
@@ -92,87 +93,42 @@ export function EmailPreferences() {
         </div>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="mentions" className="flex flex-col">
-              <span>Mentions</span>
-              <span className="text-sm text-gray-400">When someone mentions you in a post</span>
-            </Label>
+          <div className="flex items-center justify-between p-4 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 transition-colors">
+            <div>
+              <h3 className="font-medium">Marketing Emails</h3>
+              <p className="text-sm text-zinc-400">Receive emails about new features and promotions</p>
+            </div>
             <Switch
-              id="mentions"
-              checked={preferences.mentions}
-              onCheckedChange={(checked) => updatePreference("mentions", checked)}
-              disabled={saving}
-              className="data-[state=checked]:bg-[#4CAF50]"
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="replies" className="flex flex-col">
-              <span>Replies</span>
-              <span className="text-sm text-gray-400">When someone replies to your post</span>
-            </Label>
-            <Switch
-              id="replies"
-              checked={preferences.replies}
-              onCheckedChange={(checked) => updatePreference("replies", checked)}
-              disabled={saving}
-              className="data-[state=checked]:bg-[#4CAF50]"
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="new_followers" className="flex flex-col">
-              <span>New Followers</span>
-              <span className="text-sm text-gray-400">When someone follows you</span>
-            </Label>
-            <Switch
-              id="new_followers"
-              checked={preferences.new_followers}
-              onCheckedChange={(checked) => updatePreference("new_followers", checked)}
-              disabled={saving}
-              className="data-[state=checked]:bg-[#4CAF50]"
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="new_posts" className="flex flex-col">
-              <span>New Posts</span>
-              <span className="text-sm text-gray-400">When someone you follow creates a new post</span>
-            </Label>
-            <Switch
-              id="new_posts"
-              checked={preferences.new_posts}
-              onCheckedChange={(checked) => updatePreference("new_posts", checked)}
-              disabled={saving}
-              className="data-[state=checked]:bg-[#4CAF50]"
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="direct_messages" className="flex flex-col">
-              <span>Direct Messages</span>
-              <span className="text-sm text-gray-400">When you receive a direct message</span>
-            </Label>
-            <Switch
-              id="direct_messages"
-              checked={preferences.direct_messages}
-              onCheckedChange={(checked) => updatePreference("direct_messages", checked)}
-              disabled={saving}
-              className="data-[state=checked]:bg-[#4CAF50]"
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="marketing" className="flex flex-col">
-              <span>Marketing</span>
-              <span className="text-sm text-gray-400">Occasional updates and newsletters from Turf</span>
-            </Label>
-            <Switch
-              id="marketing"
-              checked={preferences.marketing}
+              checked={marketingEmails}
               onCheckedChange={(checked) => updatePreference("marketing", checked)}
               disabled={saving}
-              className="data-[state=checked]:bg-[#4CAF50]"
+              className="data-[state=checked]:bg-violet-600"
+            />
+          </div>
+          
+          <div className="flex items-center justify-between p-4 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 transition-colors">
+            <div>
+              <h3 className="font-medium">Newsletter</h3>
+              <p className="text-sm text-zinc-400">Get our weekly newsletter with the latest updates</p>
+            </div>
+            <Switch
+              checked={newsletterEmails}
+              onCheckedChange={(checked) => updatePreference("newsletter", checked)}
+              disabled={saving}
+              className="data-[state=checked]:bg-violet-600"
+            />
+          </div>
+          
+          <div className="flex items-center justify-between p-4 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 transition-colors">
+            <div>
+              <h3 className="font-medium">Notification Emails</h3>
+              <p className="text-sm text-zinc-400">Receive emails about your account activity</p>
+            </div>
+            <Switch
+              checked={notificationEmails}
+              onCheckedChange={(checked) => updatePreference("notification", checked)}
+              disabled={saving}
+              className="data-[state=checked]:bg-violet-600"
             />
           </div>
         </div>

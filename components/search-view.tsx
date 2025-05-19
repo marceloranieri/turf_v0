@@ -1,6 +1,28 @@
 "use client"
 
-import { SearchFilters } from "./search-filters"
+// Inline SearchFilters component
+const SearchFilters = ({ onApplyFilters }: { onApplyFilters: (filters: any) => void }) => {
+  return (
+    <div className="flex items-center space-x-2">
+      <select className="p-2 border rounded bg-zinc-800 border-zinc-700 text-white">
+        <option value="all">All Categories</option>
+        <option value="topics">Topics</option>
+        <option value="users">Users</option>
+      </select>
+      <select className="p-2 border rounded bg-zinc-800 border-zinc-700 text-white">
+        <option value="recent">Most Recent</option>
+        <option value="popular">Most Popular</option>
+        <option value="relevant">Most Relevant</option>
+      </select>
+      <button 
+        onClick={() => onApplyFilters({})}
+        className="bg-violet-600 text-white p-2 rounded hover:bg-violet-700"
+      >
+        Apply Filters
+      </button>
+    </div>
+  )
+}
 
 export function SearchView() {
   const handleApplyFilters = (filters: any) => {

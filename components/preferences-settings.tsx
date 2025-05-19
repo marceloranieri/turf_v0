@@ -5,8 +5,18 @@ import { Switch } from "./ui/switch"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion"
 import { Moon, Monitor, Sun, Volume2, VolumeX, Eye, Bot, Film } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
-import { Label } from "./ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+
+// Inline Label component
+const Label = ({ htmlFor, children, className, ...props }: { htmlFor?: string; children: React.ReactNode; className?: string }) => (
+  <label 
+    htmlFor={htmlFor}
+    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className || ''}`}
+    {...props}
+  >
+    {children}
+  </label>
+)
 
 interface PreferencesSettingsProps {
   onChangesMade: () => void

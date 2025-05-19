@@ -47,3 +47,5 @@ export function SearchFilters({ onSearch }: SearchFiltersProps) {
     </div>
   )
 }
+
+export { SearchFilters as default };

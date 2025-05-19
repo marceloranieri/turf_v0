@@ -289,3 +289,5 @@ export function AccountSettings() {
     </div>
   )
 }
+
+export { AccountSettings as default };

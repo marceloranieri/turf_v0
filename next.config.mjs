@@ -9,6 +9,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  webpack: (config) => {
+    config.resolve.modules = ['.', 'node_modules'];
+    return config;
+  },
 }
 
 export default nextConfig

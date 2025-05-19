@@ -332,6 +332,35 @@ export default function Register() {
               </div>
             </div>
 
+            {/* Terms and Conditions */}
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="terms"
+                checked={acceptedTerms}
+                onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                className="mt-1"
+              />
+              <label
+                htmlFor="terms"
+                className="text-sm text-zinc-400 leading-tight"
+              >
+                I agree to the{" "}
+                <Link
+                  href="/terms"
+                  className="text-violet-400 hover:text-violet-300 underline"
+                >
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy"
+                  className="text-violet-400 hover:text-violet-300 underline"
+                >
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
+
             {/* Sign up button */}
             <Button
               type="submit"
@@ -347,20 +376,6 @@ export default function Register() {
                 "Create your account"
               )}
             </Button>
-
-            {/* Terms acceptance checkbox */}
-            <div className="flex items-center space-x-2 mb-4">
-              <Checkbox 
-                id="terms" 
-                required
-                checked={acceptedTerms}
-                onCheckedChange={setAcceptedTerms}
-                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600"
-              />
-              <label htmlFor="terms" className="text-sm text-zinc-400">
-                I agree to the <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
-              </label>
-            </div>
 
             {/* Divider */}
             <div className="relative my-6">

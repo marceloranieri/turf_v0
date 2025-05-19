@@ -6,11 +6,17 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
+  console.log('Auth callback route executing')
+  
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
+  const next = requestUrl.searchParams.get("next") || "/dashboard"
+  
+  console.log('Auth callback params:', { code: !!code, next })
   
   // If code is not present, redirect to login
   if (!code) {
+    console.log('No code present in callback, redirecting to login')
     return NextResponse.redirect(new URL('/login', request.url))
   }
   
@@ -18,13 +24,28 @@ export async function GET(request: NextRequest) {
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
+    console.log('Exchanging code for session')
     // Exchange the code for a session
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
     
-    // Redirect to dashboard after successful sign-in
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (error) {
+      console.error('Error exchanging code for session:', error)
+      throw error
+    }
+    
+    if (!session) {
+      console.error('No session returned after code exchange')
+      throw new Error('No session returned')
+    }
+    
+    console.log('Successfully exchanged code for session, redirecting to:', next)
+    
+    // Redirect to the intended destination or dashboard
+    return NextResponse.redirect(new URL(next, request.url))
   } catch (error) {
     console.error('Auth callback error:', error)
-    return NextResponse.redirect(new URL('/login?error=auth_callback_error', request.url))
+    return NextResponse.redirect(
+      new URL(`/login?error=auth_callback_error&message=${encodeURIComponent(error.message)}`, request.url)
+    )
   }
 }

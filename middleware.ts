@@ -18,11 +18,17 @@ const publicPaths = [
 ]
 
 export async function middleware(req: NextRequest) {
+  console.log('Middleware executing for path:', req.nextUrl.pathname)
+  
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
   
   // Refresh session if expired
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session }, error } = await supabase.auth.getSession()
+  
+  if (error) {
+    console.error('Session error:', error)
+  }
   
   // Get current path
   const path = req.nextUrl.pathname
@@ -32,14 +38,32 @@ export async function middleware(req: NextRequest) {
     path === publicPath || path.startsWith(publicPath)
   )
   
+  console.log('Path:', path, 'Is public:', isPublicPath, 'Has session:', !!session)
+  
   // If path is public, allow access
   if (isPublicPath) {
+    // For auth callback, ensure we don't redirect
+    if (path === '/auth/callback') {
+      console.log('Auth callback detected, allowing access')
+      return res
+    }
+    
+    // If user is already authenticated and tries to access login/register,
+    // redirect to dashboard
+    if (session && (path === '/login' || path === '/register')) {
+      console.log('Authenticated user accessing auth page, redirecting to dashboard')
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+    
     return res
   }
   
   // If no session, redirect to login
   if (!session) {
-    return NextResponse.redirect(new URL('/login', req.url))
+    console.log('No session found, redirecting to login')
+    const redirectUrl = new URL('/login', req.url)
+    redirectUrl.searchParams.set('redirectTo', path)
+    return NextResponse.redirect(redirectUrl)
   }
   
   return res

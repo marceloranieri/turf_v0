@@ -1,15 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { SettingsSidebar } from "@/components/settings-sidebar"
-import { AccountSettings } from "@/components/account-settings"
-import { NotificationsSettings } from "@/components/notifications-settings"
-import { PreferencesSettings } from "@/components/preferences-settings"
-import { BlockedAccounts } from "@/components/blocked-accounts"
-import { ContactSupport } from "@/components/contact-support"
-import { Button } from "@/components/ui/button"
+import { SettingsSidebar } from "./settings-sidebar"
+import { AccountSettings } from "./account-settings"
+import { NotificationsSettings } from "./notifications-settings"
+import { PreferencesSettings } from "./preferences-settings"
+import { BlockedAccounts } from "./blocked-accounts"
+import { ContactSupport } from "./contact-support"
+import { Button } from "./ui/button"
 import { Save } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "./ui/use-toast"
 
 type SettingsSection = "account" | "notifications" | "preferences" | "blocked" | "support"
 

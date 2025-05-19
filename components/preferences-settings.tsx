@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Switch } from "@/components/ui/switch"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Switch } from "./ui/switch"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion"
 import { Moon, Monitor, Sun, Volume2, VolumeX, Eye, Bot, Film } from "lucide-react"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
+import { Label } from "./ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 interface PreferencesSettingsProps {
   onChangesMade: () => void

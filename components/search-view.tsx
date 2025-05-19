@@ -1,6 +1,6 @@
 "use client"
 
-import { SearchFilters } from "@/components/search-filters"
+import { SearchFilters } from "./search-filters"
 
 export function SearchView() {
   const handleApplyFilters = (filters: any) => {

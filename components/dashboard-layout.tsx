@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { LeftSidebar } from "@/components/left-sidebar"
-import { RightSidebar } from "@/components/right-sidebar"
+import { LeftSidebar } from "./left-sidebar"
+import { RightSidebar } from "./right-sidebar"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

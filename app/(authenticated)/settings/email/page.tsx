@@ -1,4 +1,4 @@
-import { EmailPreferences } from "../../../../components/email-preferences"
+import EmailPreferences from "../../../../components/email-preferences"
 
 export default function EmailSettingsPage() {
   return (

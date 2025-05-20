@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
@@ -16,6 +16,17 @@ export default function Login() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
   const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push(redirectTo);
+      }
+    };
+    
+    checkAuth();
+  }, [router, redirectTo, supabase.auth]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

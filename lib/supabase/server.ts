@@ -1,8 +1,12 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
-export const createServerSupabaseClient = () => {
+// Export with the name the code is expecting
+export const createClient = () => {
   return createServerComponentClient({ cookies });
 };
 
-export default createServerSupabaseClient; 
+// Keep old name for backward compatibility
+export const createServerSupabaseClient = createClient;
+
+export default createClient; 

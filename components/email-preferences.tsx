@@ -10,16 +10,17 @@ import { useSupabase } from "@/lib/supabase-provider"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
 
-export function EmailPreferences() {
+export default function EmailPreferences() {
   const { supabase } = useSupabase()
   const { user } = useAuth()
   const { toast: useToastToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [email, setEmail] = useState("")
-  const [marketingEmails, setMarketingEmails] = useState(false)
+  const [marketingEmails, setMarketingEmails] = useState(true)
   const [newsletterEmails, setNewsletterEmails] = useState(true)
   const [notificationEmails, setNotificationEmails] = useState(true)
+  const [reminderEmails, setReminderEmails] = useState(true)
 
   const updatePreference = async (key: string, value: boolean) => {
     setSaving(true)
@@ -42,6 +43,8 @@ export function EmailPreferences() {
         setNewsletterEmails(value)
       } else if (key === "notification") {
         setNotificationEmails(value)
+      } else if (key === "reminder") {
+        setReminderEmails(value)
       }
       toast.success("Preferences updated!")
     } catch (error) {
@@ -127,6 +130,19 @@ export function EmailPreferences() {
             <Switch
               checked={notificationEmails}
               onCheckedChange={(checked) => updatePreference("notification", checked)}
+              disabled={saving}
+              className="data-[state=checked]:bg-violet-600"
+            />
+          </div>
+          
+          <div className="flex items-center justify-between p-4 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 transition-colors">
+            <div>
+              <h3 className="font-medium">Reminder Emails</h3>
+              <p className="text-sm text-zinc-400">Receive reminder emails about upcoming debates and events</p>
+            </div>
+            <Switch
+              checked={reminderEmails}
+              onCheckedChange={(checked) => updatePreference("reminder", checked)}
               disabled={saving}
               className="data-[state=checked]:bg-violet-600"
             />

@@ -10,11 +10,9 @@ export async function GET(req: Request) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // If user is already logged in, redirect to dashboard
-  if (session) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  // Otherwise, let the page render
-  return NextResponse.next();
+  // Return the session status as JSON
+  return NextResponse.json({
+    authenticated: !!session,
+    redirectUrl: session ? "/dashboard" : null
+  });
 } 

@@ -6,7 +6,7 @@ import { NotificationsSettings } from "./notifications-settings"
 import { PreferencesSettings } from "./preferences-settings"
 import { BlockedAccounts } from "./blocked-accounts"
 import { ContactSupport } from "./contact-support"
-import { Button } from "./ui/button"
+import { Button } from "@/components/ui/button"
 import { Save } from "lucide-react"
 import { useToast } from "./ui/use-toast"
 

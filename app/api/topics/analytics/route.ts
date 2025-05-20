@@ -12,6 +12,26 @@ export async function GET(request: Request) {
     // Validate time range
     const validatedTimeRange = timeRangeSchema.parse(timeRange);
     
+    // Generate cache key
+    const cacheKey = `analytics_${validatedTimeRange}_${new Date().toISOString().split('T')[0]}`;
+    
+    const supabase = createClient();
+    
+    // Try to get cached data
+    const { data: cachedData, error: cacheError } = await supabase
+      .rpc('get_cached_analytics', {
+        cache_key: cacheKey,
+        cache_duration_minutes: 60
+      });
+      
+    if (cachedData && !cacheError) {
+      return NextResponse.json(cachedData, {
+        headers: {
+          'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        },
+      });
+    }
+    
     // Calculate date range
     const now = new Date();
     const startDate = new Date();
@@ -29,8 +49,6 @@ export async function GET(request: Request) {
         startDate.setDate(now.getDate() - 365);
         break;
     }
-    
-    const supabase = createClient();
     
     // Get total counts
     const { data: totalTopics, error: topicsError } = await supabase
@@ -103,7 +121,8 @@ export async function GET(request: Request) {
       value
     }));
     
-    return NextResponse.json({
+    // Prepare response data
+    const responseData = {
       totalTopics: totalTopics?.length || 0,
       totalParticipants: totalParticipants?.length || 0,
       totalComments: totalComments?.length || 0,
@@ -114,7 +133,21 @@ export async function GET(request: Request) {
         votes: topic.votes[0].count
       })),
       participationTrend,
-      topicCategories: categoryData
+      topicCategories: categoryData,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    // Store in cache
+    await supabase.rpc('store_analytics_cache', {
+      cache_key: cacheKey,
+      cache_data: responseData,
+      cache_duration_minutes: 60
+    });
+    
+    return NextResponse.json(responseData, {
+      headers: {
+        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+      },
     });
     
   } catch (error) {

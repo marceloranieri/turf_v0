@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

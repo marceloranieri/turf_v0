@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { SettingsSidebar } from "./settings-sidebar"
-import { AccountSettings } from "./account-settings"
 import { NotificationsSettings } from "./notifications-settings"
 import { PreferencesSettings } from "./preferences-settings"
 import { BlockedAccounts } from "./blocked-accounts"
@@ -10,6 +9,44 @@ import { ContactSupport } from "./contact-support"
 import { Button } from "./ui/button"
 import { Save } from "lucide-react"
 import { useToast } from "./ui/use-toast"
+
+// Inline AccountSettings component
+const AccountSettings = ({ onChangesMade }: { onChangesMade: () => void }) => {
+  return (
+    <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold">Account Settings</h2>
+        <p className="text-zinc-400">Manage your account settings and preferences</p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="p-4 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 transition-colors">
+          <h3 className="font-medium mb-2">Profile Information</h3>
+          <p className="text-sm text-zinc-400 mb-4">Update your profile information and how others see you on the platform</p>
+          <Button onClick={onChangesMade} className="bg-violet-600 hover:bg-violet-700">
+            Edit Profile
+          </Button>
+        </div>
+
+        <div className="p-4 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 transition-colors">
+          <h3 className="font-medium mb-2">Security</h3>
+          <p className="text-sm text-zinc-400 mb-4">Manage your password and security settings</p>
+          <Button onClick={onChangesMade} className="bg-violet-600 hover:bg-violet-700">
+            Change Password
+          </Button>
+        </div>
+
+        <div className="p-4 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 transition-colors">
+          <h3 className="font-medium mb-2">Account Deletion</h3>
+          <p className="text-sm text-zinc-400 mb-4">Permanently delete your account and all associated data</p>
+          <Button onClick={onChangesMade} variant="destructive">
+            Delete Account
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type SettingsSection = "account" | "notifications" | "preferences" | "blocked" | "support"
 

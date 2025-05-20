@@ -46,21 +46,52 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        // Apply these headers to all routes
+        source: '/:path*',
         headers: [
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: 'Content-Security-Policy',
+            value: `
+              default-src 'self';
+              script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co;
+              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+              img-src 'self' blob: data: https://*.supabase.co https://*.cloudflare.com;
+              font-src 'self' https://fonts.gstatic.com;
+              connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+              frame-src 'none';
+              object-src 'none';
+              base-uri 'self';
+              form-action 'self';
+              frame-ancestors 'none';
+              block-all-mixed-content;
+              upgrade-insecure-requests;
+            `.replace(/\s{2,}/g, ' ').trim()
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
+            value: 'DENY'
           },
-        ],
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
+          }
+        ]
       },
       {
         source: '/(.*).(jpg|jpeg|png|svg|webp|avif|ico|css|js)',

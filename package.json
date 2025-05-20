@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy:dev": "node scripts/deploy-to-dev.js",
+    "deploy:prod": "node scripts/deploy-to-prod.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -28,6 +30,12 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "csv-parse": "^5.6.0",
+    "d3-color": "3.1.0",
+    "d3-interpolate": "3.0.1",
+    "d3-path": "3.1.0",
+    "d3-scale": "4.0.2",
+    "d3-shape": "3.2.0",
+    "d3-time": "3.1.0",
     "date-fns": "^2.30.0",
     "framer-motion": "^11.0.5",
     "lucide-react": "^0.454.0",
@@ -40,7 +48,9 @@
     "sonner": "^2.0.3",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.25.7"
+    "zod": "^3.25.7",
+    "@upstash/redis": "^1.28.4",
+    "@upstash/ratelimit": "^1.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
@@ -52,5 +62,13 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"
+  },
+  "resolutions": {
+    "d3-scale": "4.0.2",
+    "d3-shape": "3.2.0",
+    "d3-color": "3.1.0",
+    "d3-interpolate": "3.0.1",
+    "d3-path": "3.1.0",
+    "d3-time": "3.1.0"
   }
 }

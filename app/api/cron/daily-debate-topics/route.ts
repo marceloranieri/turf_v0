@@ -20,6 +20,15 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Check if supabaseAdmin is initialized
+    if (!supabaseAdmin) {
+      console.error("Cron job: Supabase admin client not initialized. Check environment variables.")
+      return NextResponse.json(
+        { error: 'Supabase admin client not initialized. Check environment variables.' },
+        { status: 500 }
+      )
+    }
+
     // Check if topics are already selected for today
     const today = new Date().toISOString().split('T')[0]
     const { data: existingTopics, error: checkError } = await supabaseAdmin
@@ -29,7 +38,7 @@ export async function GET(request: Request) {
 
     if (checkError) {
       console.error("Cron job: Error checking existing topics:", checkError)
-      throw checkError
+      return NextResponse.json({ error: 'Failed to check existing topics' }, { status: 500 })
     }
 
     if (existingTopics && existingTopics.length > 0) {
@@ -149,4 +158,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

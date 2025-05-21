@@ -3,7 +3,15 @@ import { supabaseAdmin } from "@/lib/supabase"
 
 export async function POST(request: Request) {
   try {
-    // Seed topics
+    // Add null check for supabaseAdmin
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Supabase admin client not initialized. Check environment variables.' },
+        { status: 500 }
+      );
+    }
+    
+    // Seed topics - keeping your original topics
     const topics = [
       {
         title: "Gaming",
@@ -54,16 +62,16 @@ export async function POST(request: Request) {
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       },
     ]
-
+    
     const { data: topicsData, error: topicsError } = await supabaseAdmin
       .from("topics")
       .upsert(topics, { onConflict: "title" })
       .select()
-
+      
     if (topicsError) {
       throw topicsError
     }
-
+    
     return NextResponse.json({
       success: true,
       message: "Database seeded successfully",

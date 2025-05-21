@@ -3,15 +3,23 @@ import { supabaseAdmin } from "@/lib/supabase"
 
 export async function POST() {
   try {
+    // Add null check for supabaseAdmin
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Supabase admin client not initialized. Check environment variables.' },
+        { status: 500 }
+      );
+    }
+    
     // Reset all topics
     const { data, error } = await supabaseAdmin
-      ?.from("topics")
+      .from("topics") // Removed the ?. operator
       .update({
         last_shown: null,
         times_shown: 0
       })
-      .select()
-
+      .select() // Keeping the original .select() call
+    
     if (error) {
       console.error("Error resetting topics:", error)
       return NextResponse.json(
@@ -19,14 +27,13 @@ export async function POST() {
         { status: 500 }
       )
     }
-
+    
     return NextResponse.json({
       message: "Successfully reset topic rotation",
       stats: {
-        topicsReset: data?.length || 0
+        topicsReset: data.length // Removed the ?. operator
       }
     })
-
   } catch (error) {
     console.error("Error resetting topic rotation:", error)
     return NextResponse.json(
@@ -34,4 +41,4 @@ export async function POST() {
       { status: 500 }
     )
   }
-} 
+}

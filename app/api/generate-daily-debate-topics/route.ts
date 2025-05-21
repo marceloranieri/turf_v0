@@ -3,10 +3,18 @@ import { supabaseAdmin } from "@/lib/supabase"
 
 export async function POST() {
   try {
+    // Add proper null check for supabaseAdmin
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Supabase admin client not initialized. Check environment variables.' },
+        { status: 500 }
+      );
+    }
+
     // Check if topics are already selected for today
     const today = new Date().toISOString().split('T')[0]
     const { data: existingTopics, error: checkError } = await supabaseAdmin
-      ?.from("daily_topics")
+      .from("daily_topics") // Remove the ?. operator
       .select("id")
       .eq("date", today)
 
@@ -27,7 +35,7 @@ export async function POST() {
 
     // Get all active topics with their stats
     const { data: allTopics, error: topicsError } = await supabaseAdmin
-      ?.from("topics")
+      .from("topics") // Remove the ?. operator
       .select("*")
       .eq("is_active", true)
       .order("last_shown", { ascending: true, nullsFirst: true })
@@ -97,7 +105,7 @@ export async function POST() {
     }))
 
     const { error: insertError } = await supabaseAdmin
-      ?.from("daily_topics")
+      .from("daily_topics") // Remove the ?. operator
       .insert(dailyTopics)
 
     if (insertError) {
@@ -110,7 +118,7 @@ export async function POST() {
 
     // Update last_shown and times_shown for selected topics
     const { error: updateError } = await supabaseAdmin
-      ?.from("topics")
+      .from("topics") // Remove the ?. operator
       .update({
         last_shown: new Date().toISOString(),
         times_shown: supabaseAdmin.rpc('increment', { x: 1 })
@@ -141,4 +149,4 @@ export async function POST() {
       { status: 500 }
     )
   }
-} 
+}

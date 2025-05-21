@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfileTabs } from "@/components/profile/profile-tabs";
-import { UserAnalytics } from "@/components/topics/user-analytics";
+import { UserAnalytics } from "@/components/user-analytics";
 import { ProfileTopics } from "@/components/profile/profile-topics";
 import { ProfileComments } from "@/components/profile/profile-comments";
 import { ProfileAbout } from "@/components/profile/profile-about";

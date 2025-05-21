@@ -6,23 +6,31 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Add null check for supabaseAdmin
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Supabase admin client not initialized. Check environment variables.' },
+        { status: 500 }
+      );
+    }
+    
     const body = await request.json()
     const { is_active } = body
-
+    
     if (typeof is_active !== "boolean") {
       return NextResponse.json(
         { error: "is_active must be a boolean" },
         { status: 400 }
       )
     }
-
+    
     const { data, error } = await supabaseAdmin
       .from("topics")
       .update({ is_active })
       .eq("id", params.id)
       .select()
       .single()
-
+      
     if (error) {
       console.error("Error updating topic:", error)
       return NextResponse.json(
@@ -30,7 +38,7 @@ export async function PATCH(
         { status: 500 }
       )
     }
-
+    
     return NextResponse.json({ data })
   } catch (error) {
     console.error("Error in topic update API:", error)
@@ -39,4 +47,4 @@ export async function PATCH(
       { status: 500 }
     )
   }
-} 
+}

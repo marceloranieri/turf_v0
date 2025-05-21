@@ -13,17 +13,24 @@ const TopicSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Add null check for supabaseAdmin
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Supabase admin client not initialized. Check environment variables.' },
+        { status: 500 }
+      );
+    }
+
     // Check if the request has a file
     const formData = await request.formData()
     const file = formData.get("file") as File | null
-
     if (!file) {
       return NextResponse.json(
         { error: "No file provided" },
         { status: 400 }
       )
     }
-
+    
     // Check file type
     if (!file.name.endsWith(".csv")) {
       return NextResponse.json(
@@ -31,7 +38,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
+    
     // Read and parse the CSV file
     const csvText = await file.text()
     const records = parse(csvText, {
@@ -39,14 +46,14 @@ export async function POST(request: NextRequest) {
       skip_empty_lines: true,
       trim: true,
     })
-
+    
     if (records.length === 0) {
       return NextResponse.json(
         { error: "CSV file is empty" },
         { status: 400 }
       )
     }
-
+    
     // Validate and transform the records
     const validatedRecords = records.map((record: any) => {
       const result = TopicSchema.safeParse(record)
@@ -55,16 +62,16 @@ export async function POST(request: NextRequest) {
       }
       return result.data
     })
-
+    
     // Insert records into Supabase with upsert
     const { data, error } = await supabaseAdmin
-      ?.from("topics")
+      .from("topics") // Removed the ?. operator
       .upsert(validatedRecords, {
         onConflict: "title",
         ignoreDuplicates: false,
       })
       .select()
-
+    
     if (error) {
       console.error("Error inserting records:", error)
       return NextResponse.json(
@@ -72,17 +79,16 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
+    
     return NextResponse.json({
-      message: `Successfully imported ${data?.length || 0} topics`,
+      message: `Successfully imported ${data.length} topics`, // Removed the ?. operator
       data,
       stats: {
         total: records.length,
-        imported: data?.length || 0,
-        duplicates: records.length - (data?.length || 0),
+        imported: data.length, // Removed the ?. operator
+        duplicates: records.length - data.length, // Removed the ?. operator
       },
     })
-
   } catch (error) {
     console.error("Error processing CSV:", error)
     return NextResponse.json(
@@ -98,4 +104,4 @@ export async function GET() {
     message: "Import debate topics endpoint is working",
     instructions: "Send a POST request with a CSV file containing title, question, category, and description columns",
   })
-} 
+}

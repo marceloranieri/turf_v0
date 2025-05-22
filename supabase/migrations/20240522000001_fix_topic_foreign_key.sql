@@ -7,4 +7,4 @@ ALTER TABLE daily_topics
 ADD CONSTRAINT daily_topics_topic_id_fkey
 FOREIGN KEY (topic_id)
 REFERENCES topics(id)
-ON DELETE RESTRICT; 
+ON DELETE RESTRICT;

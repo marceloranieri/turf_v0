@@ -58,4 +58,4 @@ const checkPlugins = () => {
   }
 };
 
-checkPlugins(); 
+checkPlugins();

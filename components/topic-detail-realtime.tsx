@@ -25,7 +25,7 @@ import { useAuth } from "@/context/auth-context"
 import { useTopics } from "@/context/topics-context"
 import { useRealtime } from "@/context/realtime-context"
 import { useProfile } from "@/context/profile-context"
-import { useSupabaseClient } from "@supabase/auth-helpers-react"
+import { useSupabaseClient } from "@supabase/supabase-js"
 
 // Utility function for debouncing
 const debounce = (func: Function, wait: number) => {

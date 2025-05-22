@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/context/auth-context"
 import { useRealtime } from "@/context/realtime-context"
-import { useSupabaseClient } from "@supabase/auth-helpers-react"
+import { useSupabaseClient } from "@supabase/auth-helpers-nextjs"
 
 export function NotificationBell() {
   const { user } = useAuth()

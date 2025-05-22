@@ -36,7 +36,7 @@ export function IntegrationsGlow() {
 
     // Create gradient
     const createGradient = () => {
-      const gradient = ctx!.createLinearGradient(0, 0, (canvas?.width || 0), (canvas?.height || 0))
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
       gradient.addColorStop(0, "rgba(139, 92, 246, 0.1)") // violet-500 with low opacity
       gradient.addColorStop(0.5, "rgba(79, 70, 229, 0.2)") // indigo-600 with medium opacity
       gradient.addColorStop(1, "rgba(139, 92, 246, 0.1)") // violet-500 with low opacity
@@ -56,8 +56,8 @@ export function IntegrationsGlow() {
       color: string
 
       constructor() {
-        this.x = Math.random() * (canvas?.width || 0)
-        this.y = Math.random() * (canvas?.height || 0)
+        this.x = Math.random() * canvas.width
+        this.y = Math.random() * canvas.height
         this.size = Math.random() * 3 + 1
         this.speedX = (Math.random() - 0.5) * 0.5
         this.speedY = (Math.random() - 0.5) * 0.5
@@ -68,19 +68,18 @@ export function IntegrationsGlow() {
         this.x += this.speedX
         this.y += this.speedY
 
-        if (this.x > (canvas?.width || 0)) this.x = 0
-        else if (this.x < 0) this.x = canvas?.width || 0
+        if (this.x > canvas.width) this.x = 0
+        else if (this.x < 0) this.x = canvas.width
 
-        if (this.y > (canvas?.height || 0)) this.y = 0
-        else if (this.y < 0) this.y = canvas?.height || 0
+        if (this.y > canvas.height) this.y = 0
+        else if (this.y < 0) this.y = canvas.height
       }
 
       draw() {
-        if (!ctx) return
-        ctx!.beginPath()
-        ctx!.arc(this.x, this.y, this.size, 0, Math.PI * 2)
-        ctx!.fillStyle = this.color
-        ctx!.fill()
+        ctx.beginPath()
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+        ctx.fillStyle = this.color
+        ctx.fill()
       }
     }
 
@@ -91,11 +90,11 @@ export function IntegrationsGlow() {
 
     // Animation loop
     function animate() {
-      ctx!.clearRect(0, 0, (canvas?.width || 0), (canvas?.height || 0))
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // Draw background gradient
-      ctx!.fillStyle = createGradient()
-      ctx!.fillRect(0, 0, (canvas?.width || 0), (canvas?.height || 0))
+      ctx.fillStyle = createGradient()
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Draw particles
       for (const particle of particles) {
@@ -104,17 +103,17 @@ export function IntegrationsGlow() {
       }
 
       // Draw glow effect
-      const centerX = (canvas?.width || 0) / 2
-      const centerY = (canvas?.height || 0) / 2
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
 
-      const gradient = ctx!.createRadialGradient(centerX, centerY, 0, centerX, centerY, (canvas?.width || 0) * 0.6)
+      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, canvas.width * 0.6)
 
       gradient.addColorStop(0, "rgba(139, 92, 246, 0.3)") // violet-500
       gradient.addColorStop(0.5, "rgba(79, 70, 229, 0.1)") // indigo-600
       gradient.addColorStop(1, "rgba(0, 0, 0, 0)")
 
-      ctx!.fillStyle = gradient
-      ctx!.fillRect(0, 0, (canvas?.width || 0), (canvas?.height || 0))
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       requestAnimationFrame(animate)
     }

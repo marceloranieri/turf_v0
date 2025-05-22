@@ -25,20 +25,8 @@ import { useAuth } from "@/context/auth-context"
 import { useTopics } from "@/context/topics-context"
 import { useRealtime } from "@/context/realtime-context"
 import { useProfile } from "@/context/profile-context"
-import { useSupabaseClient } from "@supabase/supabase-js"
-
-// Utility function for debouncing
-const debounce = (func: Function, wait: number) => {
-  let timeout: NodeJS.Timeout
-  return function executedFunction(...args: any[]) {
-    const later = () => {
-      clearTimeout(timeout)
-      func(...args)
-    }
-    clearTimeout(timeout)
-    timeout = setTimeout(later, wait)
-  }
-}
+import { debounce } from "@/lib/utils"
+import { useSupabaseClient } from "@supabase/auth-helpers-react"
 
 export function TopicDetailRealtime({ topicId }: { topicId: string }) {
   const router = useRouter()
@@ -506,7 +494,7 @@ export function TopicDetailRealtime({ topicId }: { topicId: string }) {
   )
 }
 
-// Message component
+// Message component remains the same as in your original code
 function Message({
   message,
   isReply = false,

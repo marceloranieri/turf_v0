@@ -15,12 +15,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/context/auth-context"
 import { useRealtime } from "@/context/realtime-context"
-import { useSupabaseClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase"
 
 export function NotificationBell() {
   const { user } = useAuth()
   const { setupNotificationSubscription } = useRealtime()
-  const supabase = useSupabaseClient()
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -85,7 +84,7 @@ export function NotificationBell() {
     return () => {
       unsubscribe()
     }
-  }, [user, setupNotificationSubscription, supabase])
+  }, [user, setupNotificationSubscription])
 
   const markAsRead = async (id: string) => {
     if (!user) return

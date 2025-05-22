@@ -1,38 +1,47 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
-import { useSupabaseClient } from "@supabase/auth-helpers-react"
-import { useAuth } from "@/context/auth-context"
-import type { RealtimeChannel } from "@supabase/supabase-js"
+
+import { createContext, useContext } from "react"
+import { useAuth } from "./auth-context"
+import { supabase } from "@/lib/supabase"
+import { toast } from "@/hooks/use-toast"
 
 type RealtimeContextType = {
-  setupPostSubscription: (topicId: string, callback: (payload: any) => void) => () => void
-  setupTypingIndicator: (topicId: string, callback: (payload: any) => void) => () => void
-  setupNotificationSubscription: (callback: (payload: any) => void) => () => void
-  setTypingStatus: (topicId: string, isTyping: boolean) => Promise<void>
+  setupPostSubscription: (topicId: string, onPostUpdate: (payload: any) => void) => () => void
+  setupTypingIndicator: (topicId: string, onTypingUpdate: (payload: any) => void) => () => void
+  setupNotificationSubscription: (onNotification: (payload: any) => void) => () => void
+  setTypingStatus: (topicId: string, isTyping: boolean) => void
 }
 
 const RealtimeContext = createContext<RealtimeContextType | undefined>(undefined)
 
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
-  const supabase = useSupabaseClient()
   const { user } = useAuth()
-  const [channels, setChannels] = useState<RealtimeChannel[]>([])
 
-  // Clean up channels on unmount
-  useEffect(() => {
-    return () => {
-      channels.forEach((channel) => {
-        channel.unsubscribe()
-      })
+  // Set up typing status
+  const setTypingStatus = async (topicId: string, isTyping: boolean) => {
+    if (!user) return
+
+    try {
+      await supabase.from("typing_indicators").upsert(
+        {
+          user_id: user.id,
+          topic_id: topicId,
+          is_typing: isTyping,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id, topic_id" },
+      )
+    } catch (error) {
+      console.error("Error setting typing status:", error)
     }
-  }, [channels])
+  }
 
-  const setupPostSubscription = (topicId: string, callback: (payload: any) => void) => {
-    // Subscribe to messages for this topic
+  // Set up post subscription
+  const setupPostSubscription = (topicId: string, onPostUpdate: (payload: any) => void) => {
     const channel = supabase
-      .channel(`messages:topic=${topicId}`)
+      .channel(`topic:${topicId}`)
       .on(
         "postgres_changes",
         {
@@ -41,22 +50,25 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           table: "messages",
           filter: `topic_id=eq.${topicId}`,
         },
-        callback,
+        (payload) => {
+          onPostUpdate(payload)
+        },
       )
-      .subscribe()
-
-    setChannels((prev) => [...prev, channel])
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") {
+          console.error("Failed to subscribe to post updates")
+        }
+      })
 
     return () => {
-      channel.unsubscribe()
-      setChannels((prev) => prev.filter((c) => c !== channel))
+      supabase.removeChannel(channel)
     }
   }
 
-  const setupTypingIndicator = (topicId: string, callback: (payload: any) => void) => {
-    // Subscribe to typing indicators for this topic
+  // Set up typing indicator subscription
+  const setupTypingIndicator = (topicId: string, onTypingUpdate: (payload: any) => void) => {
     const channel = supabase
-      .channel(`typing:topic=${topicId}`)
+      .channel(`typing:${topicId}`)
       .on(
         "postgres_changes",
         {
@@ -65,86 +77,69 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           table: "typing_indicators",
           filter: `topic_id=eq.${topicId}`,
         },
-        callback,
+        (payload) => {
+          onTypingUpdate(payload)
+        },
       )
-      .subscribe()
-
-    setChannels((prev) => [...prev, channel])
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") {
+          console.error("Failed to subscribe to typing indicators")
+        }
+      })
 
     return () => {
-      channel.unsubscribe()
-      setChannels((prev) => prev.filter((c) => c !== channel))
+      supabase.removeChannel(channel)
     }
   }
 
-  const setupNotificationSubscription = (callback: (payload: any) => void) => {
+  // Set up notification subscription
+  const setupNotificationSubscription = (onNotification: (payload: any) => void) => {
     if (!user) return () => {}
 
-    // Subscribe to notifications for this user
     const channel = supabase
-      .channel(`notifications:user=${user.id}`)
+      .channel(`notifications:${user.id}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
-        callback,
+        (payload) => {
+          onNotification(payload)
+          toast({
+            title: "New notification",
+            description: payload.new.content,
+          })
+        },
       )
-      .subscribe()
-
-    setChannels((prev) => [...prev, channel])
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") {
+          console.error("Failed to subscribe to notifications")
+        }
+      })
 
     return () => {
-      channel.unsubscribe()
-      setChannels((prev) => prev.filter((c) => c !== channel))
+      supabase.removeChannel(channel)
     }
   }
 
-  const setTypingStatus = async (topicId: string, isTyping: boolean) => {
-    if (!user) return
-
-    try {
-      // Check if a record already exists
-      const { data: existingRecord } = await supabase
-        .from("typing_indicators")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("topic_id", topicId)
-        .single()
-
-      if (existingRecord) {
-        // Update existing record
-        await supabase
-          .from("typing_indicators")
-          .update({ is_typing: isTyping, updated_at: new Date().toISOString() })
-          .eq("id", existingRecord.id)
-      } else if (isTyping) {
-        // Only insert if typing (no need to insert a non-typing record)
-        await supabase.from("typing_indicators").insert({
-          user_id: user.id,
-          topic_id: topicId,
-          is_typing: true,
-        })
-      }
-    } catch (error) {
-      console.error("Error setting typing status:", error)
-    }
-  }
-
-  const value = {
-    setupPostSubscription,
-    setupTypingIndicator,
-    setupNotificationSubscription,
-    setTypingStatus,
-  }
-
-  return <RealtimeContext.Provider value={value}>{children}</RealtimeContext.Provider>
+  return (
+    <RealtimeContext.Provider
+      value={{
+        setupPostSubscription,
+        setupTypingIndicator,
+        setupNotificationSubscription,
+        setTypingStatus,
+      }}
+    >
+      {children}
+    </RealtimeContext.Provider>
+  )
 }
 
-export const useRealtime = () => {
+export function useRealtime() {
   const context = useContext(RealtimeContext)
   if (context === undefined) {
     throw new Error("useRealtime must be used within a RealtimeProvider")

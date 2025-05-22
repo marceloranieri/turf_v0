@@ -55,10 +55,6 @@ export async function POST(request: Request) {
       },
     ]
 
-    if (!supabaseAdmin) {
-      return Response.json({ error: 'Database connection failed' }, { status: 500 })
-    }
-
     const { data: topicsData, error: topicsError } = await supabaseAdmin
       .from("topics")
       .upsert(topics, { onConflict: "title" })

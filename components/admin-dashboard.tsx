@@ -38,6 +38,7 @@ export function AdminDashboard() {
           // Not an admin, redirect to dashboard
           toast({
             title: "Access denied",
+            description: "You don't have permission to access this page",
             variant: "destructive",
           })
           router.push("/dashboard")
@@ -99,6 +100,7 @@ export function AdminDashboard() {
       console.error("Error fetching data:", error)
       toast({
         title: "Error",
+        description: "Failed to fetch data",
         variant: "destructive",
       })
     } finally {
@@ -131,11 +133,13 @@ export function AdminDashboard() {
 
       toast({
         title: `Report ${action === "approve" ? "approved" : "rejected"}`,
+        description: `The report has been ${action === "approve" ? "approved" : "rejected"} successfully`,
       })
     } catch (error) {
       console.error(`Error ${action}ing report:`, error)
       toast({
         title: "Error",
+        description: `Failed to ${action} report`,
         variant: "destructive",
       })
     }
@@ -159,11 +163,13 @@ export function AdminDashboard() {
 
       toast({
         title: `User ${action === "ban" ? "banned" : "unbanned"}`,
+        description: `The user has been ${action === "ban" ? "banned" : "unbanned"} successfully`,
       })
     } catch (error) {
       console.error(`Error ${action}ning user:`, error)
       toast({
         title: "Error",
+        description: `Failed to ${action} user`,
         variant: "destructive",
       })
     }
@@ -194,11 +200,13 @@ export function AdminDashboard() {
 
       toast({
         title: `Topic ${action === "remove" ? "removed" : "featured"}`,
+        description: `The topic has been ${action === "remove" ? "removed" : "featured"} successfully`,
       })
     } catch (error) {
       console.error(`Error ${action}ing topic:`, error)
       toast({
         title: "Error",
+        description: `Failed to ${action} topic`,
         variant: "destructive",
       })
     }

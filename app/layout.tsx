@@ -3,10 +3,9 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/context/auth-context"
+import { ProfileProvider } from "@/context/profile-context"
 import { TopicsProvider } from "@/context/topics-context"
 import { Toaster } from "@/components/ui/toaster"
-import { SupabaseProvider } from "@/lib/supabase-provider"
-import { BookmarkProvider } from "@/components/bookmark-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -25,7 +24,7 @@ export default function RootLayout({
   const isMissingEnvVars = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={`${inter.className} bg-black text-white antialiased`}>
         {isMissingEnvVars ? (
           <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
@@ -46,16 +45,14 @@ export default function RootLayout({
             </div>
           </div>
         ) : (
-          <SupabaseProvider>
-            <AuthProvider>
+          <AuthProvider>
+            <ProfileProvider>
               <TopicsProvider>
-                <BookmarkProvider>
-                  {children}
-                  <Toaster />
-                </BookmarkProvider>
+                {children}
+                <Toaster />
               </TopicsProvider>
-            </AuthProvider>
-          </SupabaseProvider>
+            </ProfileProvider>
+          </AuthProvider>
         )}
       </body>
     </html>

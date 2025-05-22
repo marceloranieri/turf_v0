@@ -55,6 +55,7 @@ export function CreateTopicForm() {
     if (!user) {
       toast({
         title: "Authentication required",
+        description: "Please sign in to create a topic",
         variant: "destructive",
       })
       return
@@ -63,6 +64,7 @@ export function CreateTopicForm() {
     if (!title.trim() || !question.trim() || !category || !duration) {
       toast({
         title: "Missing fields",
+        description: "Please fill in all required fields",
         variant: "destructive",
       })
       return
@@ -92,6 +94,7 @@ export function CreateTopicForm() {
 
       toast({
         title: "Topic created",
+        description: "Your topic has been created successfully",
       })
 
       // Close dialog and reset form
@@ -107,6 +110,7 @@ export function CreateTopicForm() {
       console.error("Error creating topic:", error)
       toast({
         title: "Error",
+        description: "Failed to create topic. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -115,11 +119,11 @@ export function CreateTopicForm() {
   }
 
   return (
-    <Dialog>
-      <DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button className="bg-violet-600 hover:bg-violet-700">Create Topic</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[500px] bg-zinc-800 border-zinc-700">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create a New Topic</DialogTitle>
@@ -206,4 +210,3 @@ export function CreateTopicForm() {
     </Dialog>
   )
 }
-// temp rebuild

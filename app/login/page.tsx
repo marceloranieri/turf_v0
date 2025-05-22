@@ -45,11 +45,15 @@ export default function Login() {
 
     try {
       await signIn(formData.email, formData.password)
-      toast({ title: "Success" })
+      toast({
+        title: "Success",
+        description: "You have been signed in",
+      })
     } catch (error: any) {
       console.error("Error signing in:", error)
       toast({
         title: "Error",
+        description: error.message || "Failed to sign in",
         variant: "destructive",
       })
     } finally {
@@ -177,6 +181,7 @@ export default function Login() {
                   console.error("Error signing in with Google:", error)
                   toast({
                     title: "Error",
+                    description: "Failed to sign in with Google",
                     variant: "destructive",
                   })
                 }
@@ -200,7 +205,7 @@ export default function Login() {
                   fill="#EA4335"
                 />
               </svg>
-              Continue with Google
+              Sign in with Google
             </Button>
           </form>
 
@@ -212,12 +217,6 @@ export default function Login() {
                 Sign up
               </Link>
             </p>
-          </div>
-
-          {/* Legal links */}
-          <div className="mt-6 text-center text-sm text-zinc-500">
-            <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300 mr-4" target="_blank" rel="noopener noreferrer">Terms of Service</Link>
-            <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
           </div>
         </div>
 

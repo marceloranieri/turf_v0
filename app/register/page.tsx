@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation"
 import { ParticleBackground } from "@/components/particle-background"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Check, X, Eye, EyeOff, Loader2 } from "lucide-react"
@@ -23,7 +22,6 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -65,6 +63,7 @@ export default function Register() {
       console.error("Error checking username:", error)
       toast({
         title: "Error",
+        description: "Failed to check username availability",
         variant: "destructive",
       })
     } finally {
@@ -132,17 +131,10 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!acceptedTerms) {
-      toast({
-        title: "Error",
-        variant: "destructive",
-      })
-      return
-    }
-
     if (!usernameAvailable) {
       toast({
         title: "Error",
+        description: "Username is not available",
         variant: "destructive",
       })
       return
@@ -151,6 +143,7 @@ export default function Register() {
     if (passwordStrength < 3) {
       toast({
         title: "Weak Password",
+        description: "Please choose a stronger password",
         variant: "destructive",
       })
       return
@@ -167,6 +160,7 @@ export default function Register() {
 
       toast({
         title: "Account created",
+        description: "Your account has been created successfully",
       })
 
       router.push("/dashboard")
@@ -174,6 +168,7 @@ export default function Register() {
       console.error("Error signing up:", error)
       toast({
         title: "Error",
+        description: error.message || "Failed to create account",
         variant: "destructive",
       })
     } finally {
@@ -326,40 +321,11 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Terms and Conditions */}
-            <div className="flex items-start space-x-2">
-              <Checkbox
-                id="terms"
-                checked={acceptedTerms}
-                onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
-                className="mt-1"
-              />
-              <label
-                htmlFor="terms"
-                className="text-sm text-zinc-400 leading-tight"
-              >
-                I agree to the{" "}
-                <Link
-                  href="/terms"
-                  className="text-violet-400 hover:text-violet-300 underline"
-                >
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="/privacy"
-                  className="text-violet-400 hover:text-violet-300 underline"
-                >
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
             {/* Sign up button */}
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-6 rounded-lg transition-all hover:scale-[1.02] mt-6"
-              disabled={isLoading || usernameAvailable === false || !acceptedTerms}
+              disabled={isLoading || usernameAvailable === false}
             >
               {isLoading ? (
                 <>
@@ -399,6 +365,7 @@ export default function Register() {
                   console.error("Error signing in with Google:", error)
                   toast({
                     title: "Error",
+                    description: "Failed to sign in with Google",
                     variant: "destructive",
                   })
                 }
@@ -424,11 +391,6 @@ export default function Register() {
               </svg>
               Sign up with Google
             </Button>
-
-            {/* Terms note for Google sign-up */}
-            <div className="text-xs text-center mt-2 text-zinc-500">
-              By continuing, you agree to our <Link href="/legal/terms" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and <Link href="/legal/privacy" className="text-violet-400 hover:text-violet-300" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
-            </div>
           </form>
 
           {/* Sign in link */}

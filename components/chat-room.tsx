@@ -141,7 +141,6 @@ export function ChatRoom() {
   }, [timeLeft])
 
   const handleVote = (messageId: number, parentId: number | null, isUpvote: boolean) => {
-    // @ts-ignore
     setMessages((prevMessages) => {
       return prevMessages.map((message) => {
         if (parentId === null) {
@@ -234,7 +233,6 @@ export function ChatRoom() {
 
     if (replyTo) {
       // Add as a reply
-      // @ts-ignore
       setMessages((prevMessages) =>
         prevMessages.map((message) => {
           if (message.id === replyTo) {
@@ -250,7 +248,6 @@ export function ChatRoom() {
       setReplyTo(null)
     } else {
       // Add as a new message
-      // @ts-ignore
       setMessages((prevMessages) => [...prevMessages, newMessage])
     }
 
@@ -258,7 +255,6 @@ export function ChatRoom() {
   }
 
   const handleAddReaction = (messageId: number, parentId: number | null, emoji: string) => {
-    // @ts-ignore
     setMessages((prevMessages) => {
       return prevMessages.map((message) => {
         if (parentId === null && message.id === messageId) {

@@ -5,10 +5,11 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   // Environment variables are stored in Vercel dashboard for production
-  webpack: (config) => {
+  webpack(config) {
     config.resolve.alias["@"] = path.resolve(__dirname);
+    config.resolve.extensions.push(".ts", ".tsx");
     return config;
   },
-}
+};
 
 module.exports = nextConfig 

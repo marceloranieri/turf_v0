@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_ENVIRONMENT": "development"
+  },
+  "git": {
+    "deploymentEnabled": true
+  },
+  "crons": [
+    {
+      "path": "/api/cron/daily-debate-topics",
+      "schedule": "0 0 * * *"
+    }
+  ]
+} 

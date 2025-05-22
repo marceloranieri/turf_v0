@@ -1,52 +1,66 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { spawn, execSync } = require('child_process');
 
-// Get all Radix UI packages from package.json
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const installedRadixPackages = Object.keys(packageJson.dependencies)
-  .filter(dep => dep.startsWith('@radix-ui/'));
+const RADIX_PREFIX = '@radix-ui/';
 
-// Get all imports from the codebase
-const findImports = () => {
-  const imports = new Set();
-  const codeFiles = execSync('find . -type f -name "*.tsx" -o -name "*.ts"')
-    .toString()
-    .split('\n')
-    .filter(Boolean);
+const getTsFiles = () =>
+  new Promise((resolve, reject) => {
+    const find = spawn('find', ['.', '-type', 'f', '-name', '*.ts', '-o', '-name', '*.tsx']);
 
-  codeFiles.forEach(file => {
-    const content = fs.readFileSync(file, 'utf8');
-    const matches = content.match(/from ['"]@radix-ui\/[^'"]+['"]/g) || [];
-    matches.forEach(match => {
-      const importPath = match.match(/['"]([^'"]+)['"]/)[1];
-      imports.add(importPath);
+    let data = '';
+    find.stdout.on('data', chunk => data += chunk);
+    find.stderr.on('data', err => console.error(`stderr: ${err}`));
+    find.on('close', code => {
+      if (code === 0) {
+        resolve(data.trim().split('\n'));
+      } else {
+        reject(`find command failed with code ${code}`);
+      }
     });
   });
 
-  return Array.from(imports);
+const installPackages = pkgs => {
+  if (pkgs.length === 0) return;
+  const cmd = `pnpm add ${pkgs.join(' ')}`;
+  console.log(`\n📦 Installing missing Radix UI packages:\n> ${cmd}\n`);
+  try {
+    execSync(cmd, { stdio: 'inherit' });
+    console.log('\n✅ All missing packages installed.\n');
+  } catch (err) {
+    console.error('❌ Error during installation:', err.message);
+  }
 };
 
-// Compare installed vs used packages
-const usedRadixPackages = findImports();
-const missingPackages = usedRadixPackages.filter(pkg => !installedRadixPackages.includes(pkg));
+const checkImports = async () => {
+  const radixUsed = new Set();
 
-console.log('\n📦 Radix UI Package Check\n');
-console.log('Installed packages:', installedRadixPackages.length);
-console.log('Used packages:', usedRadixPackages.length);
+  try {
+    const files = await getTsFiles();
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf8');
+      const matches = content.match(/from ['"](@radix-ui\/[^'\"]+)['"]/g) || [];
+      matches.forEach(match => {
+        const clean = match.match(/@radix-ui\/[^'\"]+/)[0];
+        radixUsed.add(clean);
+      });
+    }
 
-if (missingPackages.length > 0) {
-  console.log('\n❌ Missing packages:');
-  missingPackages.forEach(pkg => console.log(`  - ${pkg}`));
-  console.log('\nTo install missing packages, run:');
-  console.log(`pnpm add ${missingPackages.join(' ')}`);
-} else {
-  console.log('\n✅ All used Radix UI packages are installed!');
-}
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const declared = Object.assign({}, pkg.dependencies, pkg.devDependencies);
 
-// Check for unused packages
-const unusedPackages = installedRadixPackages.filter(pkg => !usedRadixPackages.includes(pkg));
-if (unusedPackages.length > 0) {
-  console.log('\n⚠️  Potentially unused packages:');
-  unusedPackages.forEach(pkg => console.log(`  - ${pkg}`));
-} 
+    const missing = [...radixUsed].filter(pkg => !declared[pkg]);
+
+    if (missing.length === 0) {
+      console.log('✅ All Radix UI imports are declared in package.json');
+    } else {
+      console.warn('⚠️ Missing Radix UI dependencies found:');
+      missing.forEach(pkg => console.log(`  → ${pkg}`));
+      installPackages(missing);
+    }
+  } catch (err) {
+    console.error('❌ Error checking imports:', err);
+  }
+};
+
+checkImports(); 

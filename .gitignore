@@ -46,3 +46,19 @@ next-env.d.ts
 
 # Local development scripts with environment variables
 dev-script.sh
+# Build outputs
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Cache files
+.cache/
+.parcel-cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+

@@ -1,0 +1,54 @@
+name: Sync Environment Variables
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  sync-env-vars:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Pull Vercel Environment Variables
+        run: vercel env pull .env.vercel
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Update GitHub Secrets
+        run: |
+          # Read .env.vercel file and update GitHub secrets
+          while IFS='=' read -r key value; do
+            # Skip empty lines and comments
+            [[ -z "$key" || "$key" =~ ^# ]] && continue
+            
+            # Remove quotes if present
+            value=$(echo "$value" | sed -e 's/^"//' -e 's/"$//')
+            
+            # Skip if key or value is empty
+            [[ -z "$key" || -z "$value" ]] && continue
+            
+            echo "Updating secret: $key"
+            echo "$value" | gh secret set "$key" --body-file -
+          done < .env.vercel
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup
+        run: rm -f .env.vercel 

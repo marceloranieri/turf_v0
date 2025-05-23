@@ -66,6 +66,33 @@ The easiest way to deploy this app is to use Vercel:
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyourusername%2Fturf)
 
+## Environment Variables Sync
+
+This project uses GitHub Actions to automatically sync environment variables between Vercel and GitHub. The sync process:
+
+1. Runs daily at 2 AM UTC
+2. Can be triggered manually from the GitHub Actions tab
+3. Pulls environment variables from Vercel
+4. Updates GitHub repository secrets
+
+### Required Secrets
+
+The following secrets must be set in GitHub repository settings:
+
+- `VERCEL_ORG_ID`: Your Vercel organization ID (e.g., "turfapp")
+- `VERCEL_PROJECT_ID`: Your Vercel project ID
+- `VERCEL_TOKEN`: A Vercel access token with appropriate permissions
+
+### Manual Sync
+
+To manually sync environment variables:
+
+1. Go to the "Actions" tab in your GitHub repository
+2. Select the "Sync Environment Variables" workflow
+3. Click "Run workflow"
+4. Select the branch to run on
+5. Click "Run workflow"
+
 ## License
 
 This project is licensed under the MIT License.

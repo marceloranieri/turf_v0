@@ -40,7 +40,7 @@ export default function RootLayout({
               <ul className="list-disc list-inside text-sm text-zinc-400 space-y-1">
                 <li>NEXT_PUBLIC_SUPABASE_URL</li>
                 <li>NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
-                <li>SUPABASE_SERVICE_ROLE_KEY (for admin operations)</li>
+                <li>TURF_SERVICE_ROLE_KEY (for admin operations)</li>
               </ul>
             </div>
           </div>

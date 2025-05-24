@@ -72,7 +72,7 @@ The easiest way to deploy this app is to use Vercel:
 
 The following environment variables are required for the application to function:
 
-```env
+\`\`\`env
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -93,7 +93,7 @@ EMAIL_FROM=your_from_email
 # Other Settings
 NODE_ENV=development
 CRON_SECRET=your_cron_secret
-```
+\`\`\`
 
 ### Environment Setup
 
@@ -118,14 +118,14 @@ Since this is a private repository on GitHub Free, we use the following approach
 3. **Validation**: Use the included `check-env-vars.ts` script to verify setup
 
 To pull environment variables from Vercel:
-```bash
+\`\`\`bash
 vercel env pull .env.local
-```
+\`\`\`
 
 To validate your environment setup:
-```bash
+\`\`\`bash
 pnpm tsx scripts/check-env-vars.ts
-```
+\`\`\`
 
 ## License
 

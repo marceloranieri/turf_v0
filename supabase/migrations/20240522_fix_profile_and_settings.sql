@@ -41,4 +41,4 @@ alter table user_settings enable row level security;
 
 create policy "Allow logged-in users to read own settings"
 on user_settings for select
-using (auth.uid() = id); 
+using (auth.uid() = id);

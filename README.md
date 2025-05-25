@@ -14,7 +14,6 @@ based on users’ interests, powered by AI.
 ### Dev Setup
 
 1. Clone the repo:
-   ```bash
+   \`\`\`bash
    git clone https://github.com/marceloranieri/turf_v0
    cd turf_v0
-

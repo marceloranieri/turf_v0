@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/generate-daily-topics",
+      "path": "/api/cron/daily-topics",
       "schedule": "0 0 * * *"
     }
   ]
-} 
+}

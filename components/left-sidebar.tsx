@@ -19,6 +19,7 @@ import {
   MoreHorizontal,
   Plus,
   LogOut,
+  Circle,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -80,6 +81,13 @@ export function LeftSidebar() {
           isActive={activeItem === "home"}
           onClick={() => setActiveItem("home")}
           href="/dashboard"
+        />
+        <NavItem
+          icon={<Circle className="h-5 w-5" />}
+          label="My Circles"
+          isActive={activeItem === "circles"}
+          onClick={() => setActiveItem("circles")}
+          href="/dashboard/circles"
         />
         <NavItem
           icon={<Bell className="h-5 w-5" />}

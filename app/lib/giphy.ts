@@ -67,4 +67,4 @@ export async function getTrendingGifs(limit: number = 10): Promise<GiphySearchRe
     console.error('Error fetching trending GIFs:', error)
     throw error
   }
-} 
+}

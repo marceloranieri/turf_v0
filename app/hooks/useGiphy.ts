@@ -68,4 +68,4 @@ export function useGiphy(): UseGiphyReturn {
     getRandomGif,
     getTrendingGifs,
   }
-} 
+}

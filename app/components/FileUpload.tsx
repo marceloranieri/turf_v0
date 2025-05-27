@@ -3,10 +3,10 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import Image from 'next/image'
-import { validateImageFile, isYouTubeUrl } from '@/app/lib/image-processing'
+import { validateImageFile, isYouTubeUrl, processImage } from '@/app/lib/image-processing'
 
 interface FileUploadProps {
-  onFileSelect: (file: File) => void
+  onFileSelect: (file: File | Blob, type: 'image' | 'youtube') => void
   onCancel: () => void
 }
 
@@ -15,28 +15,36 @@ export default function FileUpload({ onFileSelect, onCancel }: FileUploadProps) 
   const [error, setError] = useState<string | null>(null)
   const [isYouTube, setIsYouTube] = useState(false)
   const [youtubeUrl, setYoutubeUrl] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
     if (!file) return
 
-    // Validate file
-    const validation = validateImageFile(file)
-    if (!validation.valid) {
-      setError(validation.error || 'Invalid file')
-      return
-    }
+    try {
+      setIsProcessing(true)
+      setError(null)
 
-    setError(null)
-    onFileSelect(file)
-
-    // Create preview for images
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = () => {
-        setPreview(reader.result as string)
+      // Validate file
+      const validation = validateImageFile(file)
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid file')
+        return
       }
-      reader.readAsDataURL(file)
+
+      // Process image
+      const processed = await processImage(file)
+      
+      // Create preview
+      const previewUrl = URL.createObjectURL(processed.blob)
+      setPreview(previewUrl)
+      
+      // Pass processed image to parent
+      onFileSelect(processed.blob, 'image')
+    } catch (err: any) {
+      setError(err.message || 'Failed to process image')
+    } finally {
+      setIsProcessing(false)
     }
   }, [onFileSelect])
 
@@ -50,7 +58,7 @@ export default function FileUpload({ onFileSelect, onCancel }: FileUploadProps) 
     }
 
     setError(null)
-    onFileSelect(new File([youtubeUrl], 'youtube-url.txt', { type: 'text/plain' }))
+    onFileSelect(new File([youtubeUrl], 'youtube-url.txt', { type: 'text/plain' }), 'youtube')
     setIsYouTube(true)
   }
 
@@ -60,7 +68,7 @@ export default function FileUpload({ onFileSelect, onCancel }: FileUploadProps) 
       'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
     },
     maxFiles: 1,
-    maxSize: 2 * 1024 * 1024 // 2MB
+    maxSize: 3 * 1024 * 1024 // 3MB
   })
 
   return (
@@ -69,9 +77,10 @@ export default function FileUpload({ onFileSelect, onCancel }: FileUploadProps) 
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors
-            ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
+            ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+            ${isProcessing ? 'opacity-50 cursor-wait' : ''}`}
         >
-          <input {...getInputProps()} />
+          <input {...getInputProps()} disabled={isProcessing} />
           {preview ? (
             <div className="relative aspect-video w-full max-w-md mx-auto">
               <Image
@@ -94,17 +103,20 @@ export default function FileUpload({ onFileSelect, onCancel }: FileUploadProps) 
           ) : (
             <div className="py-8">
               <p className="text-gray-600">
-                {isDragActive
-                  ? 'Drop the file here'
-                  : 'Drag & drop a file here, or click to select'}
+                {isProcessing 
+                  ? 'Processing image...'
+                  : isDragActive
+                    ? 'Drop the file here'
+                    : 'Drag & drop a file here, or click to select'}
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                Supports JPEG, PNG, GIF, WebP (max 2MB)
+                Supports JPEG, PNG, GIF, WebP (max 3MB)
               </p>
               <button
                 type="button"
                 onClick={() => setIsYouTube(true)}
                 className="mt-4 text-blue-500 hover:text-blue-600"
+                disabled={isProcessing}
               >
                 Or add a YouTube video
               </button>

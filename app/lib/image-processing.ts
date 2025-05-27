@@ -6,71 +6,54 @@ interface ImageDimensions {
 }
 
 interface ProcessedImage {
-  buffer: Buffer
+  blob: Blob
   dimensions: ImageDimensions
-  format: 'jpeg' | 'webp'
 }
 
-export async function processImage(
-  buffer: Buffer,
-  options: {
-    maxWidth?: number
-    maxHeight?: number
-    quality?: number
-    format?: 'jpeg' | 'webp'
-  } = {}
-): Promise<ProcessedImage> {
-  const {
-    maxWidth = 800,
-    maxHeight = 600,
-    quality = 85,
-    format = 'webp'
-  } = options
-
-  // Get original dimensions
-  const metadata = await sharp(buffer).metadata()
-  const originalWidth = metadata.width || 0
-  const originalHeight = metadata.height || 0
-
-  // Calculate new dimensions while maintaining aspect ratio
-  let newWidth = originalWidth
-  let newHeight = originalHeight
-
-  if (originalWidth > maxWidth) {
-    newWidth = maxWidth
-    newHeight = Math.round((originalHeight * maxWidth) / originalWidth)
+export async function processImage(file: File): Promise<ProcessedImage> {
+  // Check file size (3MB max)
+  if (file.size > 3 * 1024 * 1024) {
+    throw new Error('Image must be less than 3MB')
   }
 
-  if (newHeight > maxHeight) {
-    newHeight = maxHeight
-    newWidth = Math.round((newWidth * maxHeight) / newHeight)
+  // Check file type
+  if (!isImageFile(file)) {
+    throw new Error('File must be an image')
   }
 
-  // Check aspect ratio constraints (1:3 to 3:1)
-  const aspectRatio = newWidth / newHeight
-  if (aspectRatio < 1/3) {
-    newWidth = Math.round(newHeight / 3)
-  } else if (aspectRatio > 3) {
-    newHeight = Math.round(newWidth / 3)
+  // Send to API for processing
+  const response = await fetch('/api/image/resize', {
+    method: 'POST',
+    body: file
+  })
+
+  if (!response.ok) {
+    throw new Error('Image processing failed')
   }
 
-  // Process image
-  const processedBuffer = await sharp(buffer)
-    .resize(newWidth, newHeight, {
-      fit: 'inside',
-      withoutEnlargement: true
-    })
-    .toFormat(format, {
-      quality,
-      progressive: true
-    })
-    .toBuffer()
+  const blob = await response.blob()
+  
+  // Get dimensions from the processed image
+  const dimensions = await getImageDimensions(blob)
 
   return {
-    buffer: processedBuffer,
-    dimensions: { width: newWidth, height: newHeight },
-    format
+    blob,
+    dimensions
   }
+}
+
+async function getImageDimensions(blob: Blob): Promise<ImageDimensions> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      resolve({
+        width: img.width,
+        height: img.height
+      })
+    }
+    img.onerror = () => reject(new Error('Failed to load image'))
+    img.src = URL.createObjectURL(blob)
+  })
 }
 
 export function getImageSize(buffer: Buffer): number {
@@ -87,11 +70,11 @@ export function isYouTubeUrl(url: string): boolean {
 }
 
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  // Check file size (2MB max)
-  if (file.size > 2 * 1024 * 1024) {
+  // Check file size (3MB max)
+  if (file.size > 3 * 1024 * 1024) {
     return {
       valid: false,
-      error: 'Image must be less than 2MB'
+      error: 'Image must be less than 3MB'
     }
   }
 

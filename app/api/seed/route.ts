@@ -1,8 +1,22 @@
-import { NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabase"
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+// Validate environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+export async function POST(req: Request) {
   try {
+    const supabase = createServerClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_ANON_KEY!,
+      {
+        cookies: () => cookies(),
+      }
+    );
+
     // Seed topics
     const topics = [
       {
@@ -55,7 +69,7 @@ export async function POST(request: Request) {
       },
     ]
 
-    const { data: topicsData, error: topicsError } = await supabaseAdmin
+    const { data: topicsData, error: topicsError } = await supabase
       .from("topics")
       .upsert(topics, { onConflict: "title" })
       .select()

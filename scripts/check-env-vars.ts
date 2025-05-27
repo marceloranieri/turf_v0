@@ -28,6 +28,14 @@ envFiles.forEach(file => {
   }
 });
 
+// Validate environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
 // Function to check Vercel env vars
 const checkVercelEnv = async () => {
   try {
@@ -64,18 +72,13 @@ const checkGithubSecrets = async () => {
 // Function to check Supabase env vars
 const checkSupabaseEnv = async () => {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    if (supabaseUrl && supabaseKey) {
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      // Note: This is a basic check. You might want to add more specific checks
-      // based on your Supabase project settings
-      envVars['supabase'] = {
-        'NEXT_PUBLIC_SUPABASE_URL': supabaseUrl,
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY': supabaseKey,
-      };
-    }
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Note: This is a basic check. You might want to add more specific checks
+    // based on your Supabase project settings
+    envVars['supabase'] = {
+      'SUPABASE_URL': supabaseUrl,
+      'SUPABASE_ANON_KEY': supabaseKey,
+    };
   } catch (error) {
     console.log('Error checking Supabase environment');
   }

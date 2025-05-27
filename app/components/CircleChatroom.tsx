@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useGiphy } from '@/app/hooks/useGiphy'
 import { formatDistanceToNow } from 'date-fns'
+import FileUpload from './FileUpload'
+import ReportModal from './ReportModal'
+import { toast } from 'sonner'
 
 interface Message {
   id: string
@@ -14,6 +17,7 @@ interface Message {
   reactions: { emoji: string; count: number }[]
   replies: Message[]
   isBookmarked: boolean
+  attachments?: { type: 'image' | 'video'; url: string }[]
 }
 
 interface Topic {
@@ -29,6 +33,10 @@ export default function CircleChatroom() {
   const [inputValue, setInputValue] = useState('')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showGiphyPicker, setShowGiphyPicker] = useState(false)
+  const [showFileUpload, setShowFileUpload] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null)
   const { gifs, loading: gifsLoading, searchGifs } = useGiphy()
 
   // Timer countdown
@@ -55,6 +63,72 @@ export default function CircleChatroom() {
 
     return () => clearInterval(timer)
   }, [currentTopic])
+
+  const handleFileSelect = async (file: File) => {
+    setSelectedFile(file)
+    // TODO: Implement file upload to storage
+    // const url = await uploadFile(file)
+    // setSelectedFile(null)
+    // setShowFileUpload(false)
+  }
+
+  const handleFileCancel = () => {
+    setSelectedFile(null)
+    setShowFileUpload(false)
+  }
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return
+
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: inputValue.trim(),
+          circleId: currentTopic?.id
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send message')
+      }
+
+      setInputValue('')
+      // TODO: Add new message to the list
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send message')
+    }
+  }
+
+  const handleReport = async (reason: string, notes: string) => {
+    if (!selectedMessageId) return
+
+    try {
+      const response = await fetch('/api/report-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message_id: selectedMessageId,
+          reason,
+          notes
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit report')
+      }
+
+      toast.success('Report submitted successfully')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to submit report')
+      throw error // Re-throw to let the modal handle the error state
+    }
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -105,13 +179,21 @@ export default function CircleChatroom() {
         {/* Message Composer */}
         <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
           <div className="max-w-[580px] mx-auto">
-            <MessageComposer
-              value={inputValue}
-              onChange={setInputValue}
-              onEmojiClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              onGiphyClick={() => setShowGiphyPicker(!showGiphyPicker)}
-              onSend={() => {/* TODO: Handle send */}}
-            />
+            {showFileUpload ? (
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                onCancel={handleFileCancel}
+              />
+            ) : (
+              <MessageComposer
+                value={inputValue}
+                onChange={setInputValue}
+                onEmojiClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                onGiphyClick={() => setShowGiphyPicker(!showGiphyPicker)}
+                onFileClick={() => setShowFileUpload(true)}
+                onSend={handleSendMessage}
+              />
+            )}
           </div>
         </div>
       </main>
@@ -144,6 +226,16 @@ export default function CircleChatroom() {
           </div>
         </div>
       )}
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => {
+          setShowReportModal(false)
+          setSelectedMessageId(null)
+        }}
+        onReport={handleReport}
+      />
     </div>
   )
 }
@@ -201,24 +293,28 @@ function MessageCard({ message, onReact, onReply, onBookmark, onReport }: {
               <button
                 className="p-1 text-gray-500 hover:text-gray-700"
                 onClick={() => onReact('👍')}
+                aria-label="Add reaction"
               >
                 😀
               </button>
               <button
                 className="p-1 text-gray-500 hover:text-gray-700"
                 onClick={onReply}
+                aria-label="Reply to message"
               >
                 ↩️
               </button>
               <button
                 className="p-1 text-gray-500 hover:text-gray-700"
                 onClick={onBookmark}
+                aria-label={message.isBookmarked ? "Remove bookmark" : "Bookmark message"}
               >
                 {message.isBookmarked ? '🔖' : '📑'}
               </button>
               <button
                 className="p-1 text-gray-500 hover:text-gray-700"
                 onClick={onReport}
+                aria-label="Report message"
               >
                 ⚠️
               </button>
@@ -247,11 +343,12 @@ function MessageCard({ message, onReact, onReply, onBookmark, onReport }: {
 }
 
 // Message Composer Component
-function MessageComposer({ value, onChange, onEmojiClick, onGiphyClick, onSend }: {
+function MessageComposer({ value, onChange, onEmojiClick, onGiphyClick, onFileClick, onSend }: {
   value: string
   onChange: (value: string) => void
   onEmojiClick: () => void
   onGiphyClick: () => void
+  onFileClick: () => void
   onSend: () => void
 }) {
   const charLimit = 300
@@ -270,6 +367,12 @@ function MessageComposer({ value, onChange, onEmojiClick, onGiphyClick, onSend }
         <span className={`text-sm ${remainingChars < 50 ? 'text-red-500' : 'text-gray-500'}`}>
           {remainingChars}
         </span>
+        <button
+          onClick={onFileClick}
+          className="p-2 text-gray-500 hover:text-gray-700"
+        >
+          📎
+        </button>
         <button
           onClick={onEmojiClick}
           className="p-2 text-gray-500 hover:text-gray-700"

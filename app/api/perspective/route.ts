@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server'
 import { checkPerspective } from "@/lib/perspective";
-import { perspectiveRateLimiter } from "@/lib/rate-limiter";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 const PERSPECTIVE_API_KEY = process.env.PERSPECTIVE_API_KEY
 const PERSPECTIVE_API_URL = 'https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze'
@@ -16,6 +16,41 @@ export async function POST(req: Request) {
         cookies: () => cookies(),
       }
     );
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check rate limit
+    const { allowed, count } = await checkRateLimit({
+      userId: user.id,
+      endpoint: 'perspective',
+      maxRequests: 5, // 5 requests per 10 seconds
+      windowMs: 10_000, // 10 seconds
+    });
+
+    if (!allowed) {
+      return NextResponse.json(
+        { 
+          error: "Rate limit exceeded",
+          message: "Too many requests. Please try again later.",
+          retryAfter: 10
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': '10',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': (Date.now() + 10_000).toString()
+          }
+        }
+      );
+    }
 
     const { text } = await req.json()
 

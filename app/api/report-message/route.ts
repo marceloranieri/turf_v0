@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { supabase as publicClient } from '@/lib/supabaseClient';
 import { WebClient } from '@slack/web-api';
 import nodemailer from 'nodemailer';
-import { reportRateLimiter } from '@/lib/rate-limiter';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 const slack = new WebClient(process.env.SLACK_BOT_TOKEN)
 const SLACK_CHANNEL = 'C08UJD210GZ'
@@ -12,28 +12,6 @@ const SLACK_CHANNEL = 'C08UJD210GZ'
 export async function POST(req: Request) {
   try {
     const cookieStore = cookies();
-    const ip = req.headers.get("x-forwarded-for") || "anonymous";
-
-    // Check rate limit
-    if (reportRateLimiter.isRateLimited(ip)) {
-      const remainingTime = 60; // 60 seconds
-      return NextResponse.json(
-        { 
-          error: "Rate limit exceeded",
-          message: "Too many reports. Please try again later.",
-          retryAfter: remainingTime
-        },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': remainingTime.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': (Date.now() + remainingTime * 1000).toString()
-          }
-        }
-      );
-    }
-
     const supabase = createServerClient(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_ANON_KEY!,
@@ -41,6 +19,41 @@ export async function POST(req: Request) {
         cookies: () => cookies(),
       }
     );
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check rate limit
+    const { allowed, count } = await checkRateLimit({
+      userId: user.id,
+      endpoint: 'report-message',
+      maxRequests: 3, // 3 reports per minute
+      windowMs: 60_000, // 1 minute
+    });
+
+    if (!allowed) {
+      return NextResponse.json(
+        { 
+          error: "Rate limit exceeded",
+          message: "Too many reports. Please try again later.",
+          retryAfter: 60
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': (Date.now() + 60_000).toString()
+          }
+        }
+      );
+    }
 
     const { messageId, reportedBy, reason, comment } = await req.json()
 

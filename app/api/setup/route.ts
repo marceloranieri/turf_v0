@@ -1,10 +1,24 @@
 import { NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabase"
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+// Validate environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 export async function POST(request: Request) {
   try {
+    const supabase = createServerClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_ANON_KEY!,
+      {
+        cookies: () => cookies(),
+      }
+    );
+
     // Create profiles table
-    await supabaseAdmin.query(`
+    await supabase.query(`
       CREATE TABLE IF NOT EXISTS profiles (
         id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
         username TEXT UNIQUE NOT NULL,
@@ -18,7 +32,7 @@ export async function POST(request: Request) {
     `)
 
     // Create topics table
-    await supabaseAdmin.query(`
+    await supabase.query(`
       CREATE TABLE IF NOT EXISTS topics (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         title TEXT NOT NULL,
@@ -30,7 +44,7 @@ export async function POST(request: Request) {
     `)
 
     // Create messages table
-    await supabaseAdmin.query(`
+    await supabase.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         topic_id UUID REFERENCES topics(id) ON DELETE CASCADE,
@@ -43,7 +57,7 @@ export async function POST(request: Request) {
     `)
 
     // Create votes table
-    await supabaseAdmin.query(`
+    await supabase.query(`
       CREATE TABLE IF NOT EXISTS votes (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
@@ -55,7 +69,7 @@ export async function POST(request: Request) {
     `)
 
     // Create reactions table
-    await supabaseAdmin.query(`
+    await supabase.query(`
       CREATE TABLE IF NOT EXISTS reactions (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
@@ -67,7 +81,7 @@ export async function POST(request: Request) {
     `)
 
     // Create user_settings table
-    await supabaseAdmin.query(`
+    await supabase.query(`
       CREATE TABLE IF NOT EXISTS user_settings (
         user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
         theme TEXT DEFAULT 'dark',
@@ -80,7 +94,7 @@ export async function POST(request: Request) {
     `)
 
     // Create follows table
-    await supabaseAdmin.query(`
+    await supabase.query(`
       CREATE TABLE IF NOT EXISTS follows (
         follower_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
         following_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -90,7 +104,7 @@ export async function POST(request: Request) {
     `)
 
     // Create blocked_users table
-    await supabaseAdmin.query(`
+    await supabase.query(`
       CREATE TABLE IF NOT EXISTS blocked_users (
         user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
         blocked_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -100,7 +114,7 @@ export async function POST(request: Request) {
     `)
 
     // Create RLS policies
-    await supabaseAdmin.query(`
+    await supabase.query(`
       -- Profiles policies
       ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
       

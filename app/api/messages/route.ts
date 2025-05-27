@@ -1,9 +1,21 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import { checkToxicity } from "@/app/lib/moderation"
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { checkToxicity } from "@/app/lib/moderation";
+
+// Validate environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 export async function POST(req: Request) {
-  const supabase = createRouteHandlerClient({ cookies })
+  const supabase = createServerClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    {
+      cookies: () => cookies(),
+    }
+  );
+
   const { message, circleId } = await req.json()
 
   // Get current user

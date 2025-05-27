@@ -1,10 +1,14 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { supabase as publicClient } from '@/lib/supabaseClient';
 import { WebClient } from '@slack/web-api';
 import nodemailer from 'nodemailer';
 import { checkRateLimit } from '@/lib/rate-limiter';
+
+// Validate environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 const slack = new WebClient(process.env.SLACK_BOT_TOKEN)
 const SLACK_CHANNEL = 'C08UJD210GZ'

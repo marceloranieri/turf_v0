@@ -1,18 +1,48 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { WebClient } from '@slack/web-api'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { supabase as publicClient } from '@/lib/supabaseClient';
+import { WebClient } from '@slack/web-api';
+import nodemailer from 'nodemailer';
+import { reportRateLimiter } from '@/lib/rate-limiter';
 
 const slack = new WebClient(process.env.SLACK_BOT_TOKEN)
 const SLACK_CHANNEL = 'C08UJD210GZ'
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { messageId, reportedBy, reason, comment } = await request.json()
+    const cookieStore = cookies();
+    const ip = req.headers.get("x-forwarded-for") || "anonymous";
+
+    // Check rate limit
+    if (reportRateLimiter.isRateLimited(ip)) {
+      const remainingTime = 60; // 60 seconds
+      return NextResponse.json(
+        { 
+          error: "Rate limit exceeded",
+          message: "Too many reports. Please try again later.",
+          retryAfter: remainingTime
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': remainingTime.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': (Date.now() + remainingTime * 1000).toString()
+          }
+        }
+      );
+    }
+
+    const supabase = createServerClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_ANON_KEY!,
+      {
+        cookies: () => cookies(),
+      }
+    );
+
+    const { messageId, reportedBy, reason, comment } = await req.json()
 
     // Insert report into database
     const { data: report, error: reportError } = await supabase

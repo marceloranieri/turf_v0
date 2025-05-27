@@ -1,11 +1,23 @@
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server'
+import { checkPerspective } from "@/lib/perspective";
+import { perspectiveRateLimiter } from "@/lib/rate-limiter";
 
 const PERSPECTIVE_API_KEY = process.env.PERSPECTIVE_API_KEY
 const PERSPECTIVE_API_URL = 'https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze'
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { text } = await request.json()
+    const supabase = createServerClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_ANON_KEY!,
+      {
+        cookies: () => cookies(),
+      }
+    );
+
+    const { text } = await req.json()
 
     if (!text) {
       return NextResponse.json(

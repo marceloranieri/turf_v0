@@ -1,18 +1,44 @@
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+// Required env vars for Supabase SSR + app core
+const requiredEnvVars = [
+  'SUPABASE_URL',
+  'SUPABASE_ANON_KEY',
+  'TURF_SERVICE_ROLE_KEY',
+  'NEXT_PUBLIC_SITE_URL',
+  'PERSPECTIVE_API_KEY',
+  'SLACK_BOT_TOKEN',
+  'EMAIL_SERVER_HOST',
+  'EMAIL_SERVER_PORT',
+  'EMAIL_SERVER_USER',
+  'EMAIL_SERVER_PASSWORD',
+  'EMAIL_FROM',
+  'CRON_SECRET',
+];
 
-  const supabase = createMiddlewareClient({ req, res });
+export function middleware(req: NextRequest) {
+  const missingVars = requiredEnvVars.filter((key) => !process.env[key]);
 
-  // Refresh session on every request to prevent stale auth
-  await supabase.auth.getSession();
+  if (missingVars.length > 0) {
+    return new NextResponse(
+      JSON.stringify({
+        error: 'Missing required environment variables',
+        missing: missingVars,
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  }
 
-  return res;
+  // Everything looks good, continue
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ['/', '/((?!_next|favicon.ico|api/public).*)'],
 };

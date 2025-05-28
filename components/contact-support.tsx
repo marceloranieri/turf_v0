@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -15,6 +14,7 @@ export function ContactSupport() {
   const [submitted, setSubmitted] = useState(false)
   const [supportCategory, setSupportCategory] = useState("")
   const [message, setMessage] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,6 +25,10 @@ export function ContactSupport() {
       setSubmitted(true)
       setIsSubmitting(false)
     }, 1500)
+  }
+
+  const handleFileClick = () => {
+    fileInputRef.current?.click()
   }
 
   return (
@@ -82,13 +86,13 @@ export function ContactSupport() {
                       <FileText className="h-8 w-8 text-zinc-500 mx-auto mb-2" />
                       <p className="text-sm text-zinc-400">Drag and drop files here, or click to select files</p>
                       <p className="text-xs text-zinc-500 mt-1">Maximum file size: 10MB</p>
-                      <Input type="file" className="hidden" id="file-upload" multiple />
+                      <Input type="file" className="hidden" ref={fileInputRef} multiple />
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         className="mt-4 bg-zinc-800 border-zinc-700 text-white"
-                        onClick={() => document.getElementById("file-upload")?.click()}
+                        onClick={handleFileClick}
                       >
                         Browse Files
                       </Button>

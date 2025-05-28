@@ -5,16 +5,19 @@ import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/context/auth-context"
+import { ProfileProvider } from "@/context/profile-context"
 import { createClient } from "@supabase/supabase-js"
 
 const inter = Inter({ subsets: ["latin"] })
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// Validate environment variables
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 const supabase = createClient(
-  supabaseUrl!,
-  supabaseKey!
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
 export default function RootLayout({
@@ -32,8 +35,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider supabase={supabase}>
-            {children}
-            <Toaster />
+            <ProfileProvider>
+              {children}
+              <Toaster />
+            </ProfileProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

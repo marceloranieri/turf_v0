@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { CircleLayout } from "@/components/circle-layout"
 import { CircleChatroom } from "@/components/circle-chatroom"
 

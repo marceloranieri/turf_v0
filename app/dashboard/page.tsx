@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { LeftSidebar } from "@/components/left-sidebar"
 import TopicGrid from '@/components/TopicGrid'
+import CategoryTabs, { Category } from '@/components/CategoryTabs'
+import RefreshTimer from '@/components/RefreshTimer'
 import { Loader2 } from 'lucide-react'
 
 interface Topic {
@@ -14,8 +16,7 @@ interface Topic {
   active_users?: number
 }
 
-const CATEGORIES = ['All', 'Tech', 'Design', 'Lifestyle', 'Gaming'] as const
-type Category = typeof CATEGORIES[number]
+const REFRESH_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
 
 export default function DashboardPage() {
   const [topics, setTopics] = useState<Topic[]>([])
@@ -26,13 +27,30 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadTopics() {
       try {
-        console.log('Fetching topics...')
+        const cached = localStorage.getItem('turf_topics')
+        const lastFetched = localStorage.getItem('turf_last_fetch')
+        const now = Date.now()
+
+        // Use cached data if it's less than 24 hours old
+        if (cached && lastFetched && now - parseInt(lastFetched) < REFRESH_INTERVAL) {
+          console.log('Using cached topics')
+          setTopics(JSON.parse(cached))
+          setLoading(false)
+          return
+        }
+
+        console.log('Fetching fresh topics...')
         const response = await fetch('/api/generate-daily-topics')
         if (!response.ok) {
           throw new Error('Failed to fetch topics')
         }
         const data = await response.json()
         console.log('Fetched topics:', data)
+        
+        // Cache the new data
+        localStorage.setItem('turf_topics', JSON.stringify(data))
+        localStorage.setItem('turf_last_fetch', now.toString())
+        
         setTopics(data)
       } catch (err) {
         console.error('Error loading topics:', err)
@@ -47,30 +65,21 @@ export default function DashboardPage() {
 
   const filteredTopics = selectedCategory === 'All'
     ? topics
-    : topics.filter(topic => topic.category === selectedCategory)
+    : topics.filter(topic => topic.category?.toLowerCase() === selectedCategory.toLowerCase())
 
   return (
     <div className="flex min-h-screen bg-zinc-900 text-white">
       <LeftSidebar />
       <main className="flex-1 p-8">
-        <h1 className="text-2xl font-bold mb-6">Today's Circles</h1>
-
-        {/* Category Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-          {CATEGORIES.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all
-                ${selectedCategory === category
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                }`}
-            >
-              {category}
-            </button>
-          ))}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Today's Circles</h1>
+          <RefreshTimer />
         </div>
+
+        <CategoryTabs
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
 
         {/* Content Area */}
         {loading ? (

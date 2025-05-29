@@ -1,27 +1,28 @@
+'use client'
 import React from 'react'
 
-const CATEGORIES = ['All', 'Tech', 'Design', 'Lifestyle', 'Gaming'] as const
-export type Category = typeof CATEGORIES[number]
+export default function CategoryTabs({
+  selected,
+  setSelected,
+}: {
+  selected: string
+  setSelected: (v: string) => void
+}) {
+  const categories = ['All', 'Tech', 'Design', 'Lifestyle', 'Gaming']
 
-interface CategoryTabsProps {
-  selectedCategory: Category
-  onSelectCategory: (category: Category) => void
-}
-
-export default function CategoryTabs({ selectedCategory, onSelectCategory }: CategoryTabsProps) {
   return (
-    <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-      {CATEGORIES.map((category) => (
+    <div className="flex gap-3 mt-4 text-sm">
+      {categories.map((tab) => (
         <button
-          key={category}
-          onClick={() => onSelectCategory(category)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
-            ${selectedCategory === category
-              ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-              : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-white'
-            }`}
+          key={tab}
+          className={`px-3 py-1 rounded-full transition-all ${
+            selected === tab
+              ? 'bg-white text-black'
+              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+          }`}
+          onClick={() => setSelected(tab)}
         >
-          {category}
+          {tab}
         </button>
       ))}
     </div>

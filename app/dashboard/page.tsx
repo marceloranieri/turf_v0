@@ -5,7 +5,7 @@ import { LeftSidebar } from "@/components/left-sidebar"
 import TopicGrid from '@/components/TopicGrid'
 import CategoryTabs from '@/components/CategoryTabs'
 import RefreshTimer from '@/components/RefreshTimer'
-import RightSidebar from '@/components/RightSidebar'
+import RightSuggestionsPane from '@/components/RightSuggestionsPane'
 import { Loader2 } from 'lucide-react'
 
 interface Topic {
@@ -99,7 +99,7 @@ export default function DashboardPage() {
           <TopicGrid topics={filteredTopics} />
         )}
       </div>
-      <RightSidebar />
+      <RightSuggestionsPane />
     </div>
   )
 }

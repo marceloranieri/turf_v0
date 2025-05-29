@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use client"
 
 import { LeftSidebar } from "@/components/left-sidebar"
@@ -5,11 +6,37 @@ import { Compass } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
+=======
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { format, subDays } from 'date-fns'
+import { LeftSidebar } from '@/components/left-sidebar'
+import RightSuggestionsPane from '@/components/RightSuggestionsPane'
+import TodaysTopicCard from '@/components/turf/todays-topic-card'
+import YesterdaysTopicCard from '@/components/turf/yesterdays-topic-card'
 
-export default function ExplorePage() {
+export default async function ExplorePage() {
+  const supabase = createServerComponentClient({ cookies })
+
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd')
+
+  // Fetch today's topics
+  const { data: todaysTopics } = await supabase
+    .from('topics')
+    .select('id, title, category, image_url, slug')
+    .eq('date', today)
+    .order('created_at', { ascending: false })
+
+  // Fetch yesterday's top-voted messages (join with topics)
+  const { data: yesterdaysTopics } = await supabase
+    .rpc('get_yesterdays_hottest_messages', { date_input: yesterday })
+>>>>>>> 5eb66af (feat: Add Explore page with server-side data fetching and topic cards)
+
   return (
     <div className="flex min-h-screen bg-zinc-900 text-white">
       <LeftSidebar />
+<<<<<<< HEAD
       <main className="flex-1 p-8">
         <div className="flex items-center gap-2 mb-6">
           <Compass className="h-6 w-6" />
@@ -75,6 +102,57 @@ export default function ExplorePage() {
           </div>
         </section>
       </main>
+=======
+      
+      {/* Main content area */}
+      <div className="flex-1 p-8">
+        <h1 className="text-2xl font-bold mb-8">Explore</h1>
+
+        {/* Today's Topics */}
+        <div className="mb-12">
+          <h2 className="text-lg text-zinc-300 mb-6">Today's Topics</h2>
+          {todaysTopics?.length ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {todaysTopics.map((topic) => (
+                <TodaysTopicCard
+                  key={topic.id}
+                  title={topic.title}
+                  imageUrl={topic.image_url}
+                  category={topic.category}
+                  joinUrl={`/circles/${topic.slug}`}
+                  shareUrl={`${process.env.NEXT_PUBLIC_SITE_URL}/circles/${topic.slug}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-zinc-500 text-center py-8">No trending topics yet.</p>
+          )}
+        </div>
+
+        {/* Yesterday's Hottest Circles */}
+        <div>
+          <h2 className="text-lg text-zinc-300 mb-6">🔥 Yesterday's Hottest Circles</h2>
+          {yesterdaysTopics?.length ? (
+            <div className="space-y-4">
+              {yesterdaysTopics.map((topic) => (
+                <YesterdaysTopicCard
+                  key={topic.id}
+                  topicTitle={topic.topic_title}
+                  messageContent={topic.message}
+                  messageUser={topic.username}
+                  upvotes={topic.upvotes}
+                  joinUrl={`/circles/${topic.slug}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-zinc-500 text-center py-8">No highlights from yesterday.</p>
+          )}
+        </div>
+      </div>
+
+      <RightSuggestionsPane />
+>>>>>>> 5eb66af (feat: Add Explore page with server-side data fetching and topic cards)
     </div>
   )
 } 

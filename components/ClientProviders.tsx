@@ -4,13 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/context/auth-context"
 import { ProfileProvider } from "@/context/profile-context"
 import { TopicsProvider } from "@/context/topics-context"
-import { createBrowserClient } from "@supabase/ssr"
-
-// Create Supabase client for browser
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { SupabaseProvider } from "@/components/providers/SupabaseProvider"
+import { useSupabase } from "@/components/providers/SupabaseProvider"
 
 export default function ClientProviders({
   children,
@@ -24,13 +19,20 @@ export default function ClientProviders({
       enableSystem
       disableTransitionOnChange
     >
-      <AuthProvider supabase={supabase}>
-        <ProfileProvider>
-          <TopicsProvider>
-            {children}
-          </TopicsProvider>
-        </ProfileProvider>
-      </AuthProvider>
+      <SupabaseProvider>
+        <AuthProviderWithSupabase>
+          <ProfileProvider>
+            <TopicsProvider>
+              {children}
+            </TopicsProvider>
+          </ProfileProvider>
+        </AuthProviderWithSupabase>
+      </SupabaseProvider>
     </ThemeProvider>
   )
+}
+
+function AuthProviderWithSupabase({ children }: { children: React.ReactNode }) {
+  const supabase = useSupabase()
+  return <AuthProvider supabase={supabase}>{children}</AuthProvider>
 } 

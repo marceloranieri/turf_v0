@@ -87,4 +87,4 @@ export function useProfile() {
     throw new Error("useProfile must be used within a ProfileProvider")
   }
   return context
-} 
+}

@@ -107,4 +107,4 @@ export default function ChatMedia({ type, url, alt = '', className }: ChatMediaP
       )}
     </div>
   )
-} 
+}

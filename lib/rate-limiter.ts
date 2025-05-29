@@ -42,4 +42,4 @@ export async function checkRateLimit({
   });
 
   return { allowed: true, count: count ?? 0 };
-} 
+}

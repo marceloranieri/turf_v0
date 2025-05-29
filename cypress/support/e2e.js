@@ -7,4 +7,4 @@ Cypress.on('test:after:run', (attributes) => {
     const screenshotFileName = `${attributes.title} -- ${attributes.name} (failed).png`
     cy.screenshot(screenshotFileName)
   }
-}) 
+})

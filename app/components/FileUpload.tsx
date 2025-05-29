@@ -160,4 +160,4 @@ export default function FileUpload({ onFileSelect, onCancel }: FileUploadProps) 
       )}
     </div>
   )
-} 
+}

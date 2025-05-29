@@ -70,4 +70,4 @@ export default function CircleChatroomSlugPage({
       <CircleChatroom topic={topic} />
     </CircleLayout>
   )
-} 
+}

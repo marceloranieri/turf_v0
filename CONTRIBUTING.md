@@ -7,32 +7,32 @@
 #### 1. Frontend Code (`/app/components`, `/app/(client-routes)`)
 
 ✅ **Correct Usage:**
-```typescript
+\`\`\`typescript
 process.env.NEXT_PUBLIC_SUPABASE_URL
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-```
+\`\`\`
 
 🚫 **Never Use:**
-```typescript
+\`\`\`typescript
 process.env.SUPABASE_URL
 process.env.SUPABASE_ANON_KEY
 process.env.TURF_SERVICE_ROLE_KEY
-```
+\`\`\`
 
 #### 2. Backend Code (`/app/api`, `/lib/server`, cron jobs, middleware)
 
 ✅ **Correct Usage:**
-```typescript
+\`\`\`typescript
 process.env.SUPABASE_URL
 process.env.SUPABASE_ANON_KEY
 process.env.TURF_SERVICE_ROLE_KEY (only in secured server-side code)
-```
+\`\`\`
 
 🚫 **Never Use:**
-```typescript
+\`\`\`typescript
 process.env.NEXT_PUBLIC_SUPABASE_URL
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-```
+\`\`\`
 
 ### ⚠️ Security Notes
 
@@ -50,15 +50,15 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 ### 🔍 How to Verify
 
 1. **Frontend Code Check:**
-   ```bash
+   \`\`\`bash
    grep -r "process.env.SUPABASE_" ./app/components ./app/\(client-routes\)
-   ```
+   \`\`\`
    Should only find `NEXT_PUBLIC_` variants.
 
 2. **Backend Code Check:**
-   ```bash
+   \`\`\`bash
    grep -r "process.env.NEXT_PUBLIC_SUPABASE_" ./app/api ./lib/server
-   ```
+   \`\`\`
    Should return no results.
 
 ### 🚀 Deployment Checklist
@@ -78,4 +78,4 @@ Before deploying, ensure:
    - Client-side code
    - Public repositories
    - Build logs
-   - Error messages 
+   - Error messages

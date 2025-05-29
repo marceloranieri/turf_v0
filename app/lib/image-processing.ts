@@ -91,4 +91,4 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
 
 export function getResponsiveImageSizes(originalWidth: number): string {
   return `(max-width: 768px) ${Math.round(originalWidth * 0.75)}px, ${originalWidth}px`
-} 
+}

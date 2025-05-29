@@ -37,4 +37,4 @@ describe('Topic Suggestion Flow', () => {
     // Verify submit button is now enabled
     cy.get('[data-testid="submit-topic-suggestion"]').should('not.be.disabled')
   })
-}) 
+})

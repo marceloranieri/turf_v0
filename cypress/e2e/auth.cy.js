@@ -14,4 +14,4 @@ describe('Authenticated Routes', () => {
     cy.url().should('include', '/chat');
     cy.contains('Turf').should('exist');
   });
-}); 
+});

@@ -49,4 +49,4 @@ export function getToxicityReason(scores: PerspectiveResponse): string {
   }
 
   return reasons.join(', ')
-} 
+}

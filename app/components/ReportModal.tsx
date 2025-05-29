@@ -108,4 +108,4 @@ export default function ReportModal({ isOpen, onClose, onReport }: ReportModalPr
       </div>
     </Dialog>
   )
-} 
+}

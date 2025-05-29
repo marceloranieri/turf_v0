@@ -199,18 +199,18 @@ Implemented dynamic routing for circle chatrooms with Supabase integration, allo
 - Returns topic details: `id`, `title`, and `slug`
 
 ### 2. Routing Structure
-```
+\`\`\`
 app/
 ├── circle-chatroom/
 │   ├── page.tsx           # Redirects to current topic
 │   └── [slug]/
 │       └── page.tsx       # Dynamic topic page
-```
+\`\`\`
 
 ### 3. Key Components
 
 #### Redirect Page (`circle-chatroom/page.tsx`)
-```typescript
+\`\`\`typescript
 // Fetches current topic
 const { data } = await supabase
   .from('current_topic')
@@ -221,17 +221,17 @@ const { data } = await supabase
 if (data?.slug) {
   router.push(`/circle-chatroom/${data.slug}`);
 }
-```
+\`\`\`
 
 #### Dynamic Topic Page (`circle-chatroom/[slug]/page.tsx`)
-```typescript
+\`\`\`typescript
 // Fetches topic by slug
 const { data } = await supabase
   .from("topics")
   .select("*")
   .eq("slug", slug)
   .single();
-```
+\`\`\`
 
 ## ✅ Features Implemented
 - [x] Automatic redirection to current topic

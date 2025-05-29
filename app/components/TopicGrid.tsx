@@ -19,4 +19,4 @@ export default function TopicGrid({ topics }: { topics: any[] }) {
       ))}
     </div>
   )
-} 
+}

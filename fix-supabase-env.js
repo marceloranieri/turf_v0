@@ -39,4 +39,4 @@ function fixFile(filePath) {
 const files = walk(TARGET_DIR);
 files.forEach(fixFile);
 
-console.log('🔍 Scan complete. All env key issues inside /app/api should be fixed.'); 
+console.log('🔍 Scan complete. All env key issues inside /app/api should be fixed.');

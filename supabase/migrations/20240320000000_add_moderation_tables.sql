@@ -51,4 +51,4 @@ begin
     select 1 from banned_users where banned_users.user_id = $1
   );
 end;
-$$ language plpgsql security definer; 
+$$ language plpgsql security definer;

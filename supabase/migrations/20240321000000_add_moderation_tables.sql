@@ -129,4 +129,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER update_flagged_reporter_trigger
   AFTER UPDATE ON reports
   FOR EACH ROW
-  EXECUTE FUNCTION update_flagged_reporter(); 
+  EXECUTE FUNCTION update_flagged_reporter();

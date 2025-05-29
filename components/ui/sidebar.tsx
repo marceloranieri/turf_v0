@@ -26,12 +26,6 @@ const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
-// Cookie management function
-const setCookie = (name: string, value: string, maxAge: number) => {
-  if (typeof document === 'undefined') return
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}`
-}
-
 type SidebarContext = {
   state: "expanded" | "collapsed"
   open: boolean
@@ -90,7 +84,7 @@ const SidebarProvider = React.forwardRef<
         }
 
         // This sets the cookie to keep the sidebar state.
-        setCookie(SIDEBAR_COOKIE_NAME, String(openState), SIDEBAR_COOKIE_MAX_AGE)
+        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       },
       [setOpenProp, open]
     )

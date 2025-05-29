@@ -15,4 +15,4 @@ export default function DashboardLayout({
       </TopicsProvider>
     </ProfileProvider>
   )
-} 
+}

@@ -23,4 +23,4 @@ describe('Turf homepage', () => {
       }
     });
   });
-}); 
+});

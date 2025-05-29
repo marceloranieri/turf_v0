@@ -100,4 +100,4 @@ export function SuggestTopicModal({ isOpen, onClose }: SuggestTopicModalProps) {
       </DialogContent>
     </Dialog>
   )
-} 
+}

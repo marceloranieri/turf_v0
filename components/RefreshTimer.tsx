@@ -23,4 +23,4 @@ export default function RefreshTimer() {
       Topics refresh in: <span className="text-white font-mono">{timeLeft}</span>
     </p>
   )
-} 
+}

@@ -33,4 +33,4 @@ $$ language plpgsql;
 create trigger handle_updated_at
   before update on public.topic_suggestions
   for each row
-  execute function public.handle_updated_at(); 
+  execute function public.handle_updated_at();

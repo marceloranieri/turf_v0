@@ -17,4 +17,4 @@ describe('QA: Scan all clickable elements', () => {
           });
       });
   });
-}); 
+});

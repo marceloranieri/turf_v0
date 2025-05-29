@@ -31,4 +31,4 @@ export async function checkToxicity(text: string): Promise<boolean> {
     console.error('Error checking toxicity:', error)
     return true // Allow message if check fails
   }
-} 
+}

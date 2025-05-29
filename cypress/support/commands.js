@@ -40,4 +40,4 @@ Cypress.Commands.add('loginBySupabase', () => {
   }).then(({ body }) => {
     window.localStorage.setItem('supabase.auth.token', JSON.stringify(body));
   });
-}); 
+});

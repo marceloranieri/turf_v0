@@ -395,4 +395,4 @@ function MessageComposer({ value, onChange, onEmojiClick, onGiphyClick, onFileCl
       </div>
     </div>
   )
-} 
+}

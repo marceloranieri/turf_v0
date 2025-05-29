@@ -23,6 +23,7 @@ import {
   ChevronDown,
   ChevronRight,
   Pin,
+  Lightbulb,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -35,12 +36,14 @@ import {
 import { useAuth } from "@/context/auth-context"
 import { useProfile } from "@/context/profile-context"
 import { supabase } from "@/lib/supabase"
+import { SuggestTopicModal } from "@/components/suggest-topic-modal"
 
 export function LeftSidebar() {
   const pathname = usePathname()
   const [activeItem, setActiveItem] = useState(pathname === "/dashboard" ? "home" : "")
   const { user, signOut } = useAuth()
   const { profile } = useProfile()
+  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false)
 
   return (
     <div className="w-64 border-r border-zinc-800/50 backdrop-blur-sm bg-zinc-900/80 p-4 flex flex-col">
@@ -86,7 +89,7 @@ export function LeftSidebar() {
           onClick={() => setActiveItem("home")}
           href="/dashboard"
         />
-        <SidebarMyCircles userId={user?.id} />
+        <SidebarMyCircles userId={user?.id || ""} />
         <NavItem
           icon={<Bell className="h-5 w-5" />}
           label="Notifications"
@@ -139,9 +142,15 @@ export function LeftSidebar() {
           <CommunityItem name="Design" count={3} />
           <CommunityItem name="Gaming" count={8} />
         </div>
-        <Button variant="ghost" size="sm" className="w-full mt-2 text-zinc-400 justify-start">
-          <Plus className="h-4 w-4 mr-2" />
-          Join Community
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="w-full mt-2 text-zinc-400 justify-start"
+          onClick={() => setIsSuggestModalOpen(true)}
+          data-testid="suggest-topic-button"
+        >
+          <Lightbulb className="h-4 w-4 mr-2" />
+          Suggest Topic
         </Button>
       </div>
 
@@ -158,6 +167,11 @@ export function LeftSidebar() {
         </div>
         <Button className="w-full mt-3 bg-violet-600 hover:bg-violet-700">Post</Button>
       </div>
+
+      <SuggestTopicModal 
+        isOpen={isSuggestModalOpen}
+        onClose={() => setIsSuggestModalOpen(false)}
+      />
     </div>
   )
 }
@@ -290,7 +304,7 @@ function SidebarMyCircles({ userId }: { userId: string }) {
       <button
         className="flex items-center w-full px-2 py-2 rounded-md hover:bg-zinc-800/70 transition-colors text-zinc-400 font-semibold text-sm mb-1"
         data-testid="nav-my-circles"
-        onClick={() => setExpanded((e) => !e)}
+        onClick={() => setExpanded((e: boolean) => !e)}
         aria-expanded="true"
       >
         <Circle className="h-5 w-5 mr-3" />

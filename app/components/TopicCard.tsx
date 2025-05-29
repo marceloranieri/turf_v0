@@ -12,7 +12,7 @@ interface Topic {
   active_users?: number
 }
 
-export default function TopicCard({ topic }: { topic: Topic }) {
+export default function TopicCard({ topic }: { topic: any }) {
   return (
     <div
       data-testid="topic-card"

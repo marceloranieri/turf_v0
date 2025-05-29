@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { LeftSidebar } from "@/components/left-sidebar"
 import TopicGrid from '@/components/TopicGrid'
-import CategoryTabs, { Category } from '@/components/CategoryTabs'
+import CategoryTabs from '@/components/CategoryTabs'
 import RefreshTimer from '@/components/RefreshTimer'
+import RightSidebar from '@/components/RightSidebar'
 import { Loader2 } from 'lucide-react'
 
 interface Topic {
@@ -22,7 +23,7 @@ export default function DashboardPage() {
   const [topics, setTopics] = useState<Topic[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<Category>('All')
+  const [selectedCategory, setSelectedCategory] = useState('All')
 
   useEffect(() => {
     async function loadTopics() {
@@ -70,15 +71,15 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-zinc-900 text-white">
       <LeftSidebar />
-      <main className="flex-1 p-8">
+      <div className="flex-1 p-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Today's Circles</h1>
           <RefreshTimer />
         </div>
 
         <CategoryTabs
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
+          selected={selectedCategory}
+          setSelected={setSelectedCategory}
         />
 
         {/* Content Area */}
@@ -97,7 +98,8 @@ export default function DashboardPage() {
         ) : (
           <TopicGrid topics={filteredTopics} />
         )}
-      </main>
+      </div>
+      <RightSidebar />
     </div>
   )
 }

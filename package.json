@@ -9,7 +9,8 @@
     "lint": "next lint",
     "cy:run": "cypress run --record --key 5d1442bb-28f6-4d99-8207-47419a72aaaa",
     "cy:qa": "cypress run --spec 'cypress/e2e/ui-click-audit.cy.js' --record --key 5d1442bb-28f6-4d99-8207-47419a72aaaa",
-    "cy:qa-auth": "cypress run --record --key 5d1442bb-28f6-4d99-8207-47419a72aaaa"
+    "cy:qa-auth": "cypress run --record --key 5d1442bb-28f6-4d99-8207-47419a72aaaa",
+    "cy:qa-full": "cypress run --spec 'cypress/e2e/full-ui-flow.cy.js' --record --key 5d1442bb-28f6-4d99-8207-47419a72aaaa"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",

@@ -185,3 +185,87 @@ The project has made significant progress toward a production-ready MVP. The rec
 3. User feedback implementation
 4. Documentation improvement
 5. Testing automation
+
+# 🚀 Chatroom Routing Implementation Status
+
+## 📋 Overview
+Implemented dynamic routing for circle chatrooms with Supabase integration, allowing users to be automatically directed to the current active topic.
+
+## 🛠 Technical Implementation
+
+### 1. Database View
+- Created `current_topic` view in Supabase
+- View automatically selects the most recent topic
+- Returns topic details: `id`, `title`, and `slug`
+
+### 2. Routing Structure
+```
+app/
+├── circle-chatroom/
+│   ├── page.tsx           # Redirects to current topic
+│   └── [slug]/
+│       └── page.tsx       # Dynamic topic page
+```
+
+### 3. Key Components
+
+#### Redirect Page (`circle-chatroom/page.tsx`)
+```typescript
+// Fetches current topic
+const { data } = await supabase
+  .from('current_topic')
+  .select('*')
+  .single();
+
+// Redirects to topic page
+if (data?.slug) {
+  router.push(`/circle-chatroom/${data.slug}`);
+}
+```
+
+#### Dynamic Topic Page (`circle-chatroom/[slug]/page.tsx`)
+```typescript
+// Fetches topic by slug
+const { data } = await supabase
+  .from("topics")
+  .select("*")
+  .eq("slug", slug)
+  .single();
+```
+
+## ✅ Features Implemented
+- [x] Automatic redirection to current topic
+- [x] Dynamic routing based on topic slugs
+- [x] Real-time topic updates via Supabase
+- [x] Error handling for missing topics
+
+## 🔄 Flow
+1. User visits `/circle-chatroom`
+2. System fetches current topic from Supabase
+3. User is redirected to `/circle-chatroom/[current-topic-slug]`
+4. Topic page loads with relevant content
+
+## 🧪 Testing
+- Added Cypress tests for routing
+- Implemented Supabase authentication
+- Added smoke tests for clickable elements
+
+## 📈 Next Steps
+- [ ] Add topic rotation scheduling
+- [ ] Implement topic archiving
+- [ ] Add user participation tracking
+- [ ] Set up automated topic transitions
+
+## 🔐 Security
+- Routes are protected with Supabase authentication
+- Topic access is controlled via database policies
+- User sessions are properly managed
+
+## 🎯 Performance
+- Efficient database queries
+- Client-side caching
+- Optimized page transitions
+
+---
+
+*Last Updated: March 2024*

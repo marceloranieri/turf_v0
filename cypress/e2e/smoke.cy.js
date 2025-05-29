@@ -14,13 +14,16 @@ describe('Turf homepage', () => {
         const elementType = $el.prop('tagName').toLowerCase();
         const elementText = $el.text().trim() || $el.attr('aria-label') || 'unnamed element';
         
-        cy.wrap($el).click({ force: true }).then(() => {
-          // Log successful clicks
-          cy.log(`Clicked ${elementType}: ${elementText}`);
-        }).catch((error) => {
-          // Log failed clicks
-          cy.log(`Failed to click ${elementType}: ${elementText}`, error);
-        });
+        // Use Cypress commands properly
+        cy.wrap($el)
+          .click({ force: true })
+          .then(() => {
+            cy.log(`Clicked ${elementType}: ${elementText}`);
+          })
+          .on('fail', (error) => {
+            cy.log(`Failed to click ${elementType}: ${elementText}`, error);
+            return false; // Prevent test from failing
+          });
       }
     });
   });

@@ -127,7 +127,7 @@ export default function DashboardPage() {
                 No topics available in this category.
               </div>
             ) : (
-              <TopicGrid topics={filteredTopics} />
+              <TopicGrid topics={filteredTopics} loading={loading} />
             )}
           </div>
 

@@ -124,7 +124,7 @@ export function LeftSidebar() {
           label="Explore"
           isActive={activeItem === "explore"}
           onClick={() => setActiveItem("explore")}
-          href="#"
+          href="/explore"
         />
         <NavItem
           icon={<Settings className="h-5 w-5" />}

@@ -226,16 +226,22 @@ function CommunityItem({ name, count }: { name: string; count: number }) {
 }
 
 function SidebarMyCircles({ userId }: { userId: string }) {
-  const [expanded, setExpanded] = useState(() => {
-    if (typeof window !== "undefined") {
-      return JSON.parse(localStorage.getItem("sidebarMyCirclesExpanded") ?? "true")
-    }
-    return true
-  })
+  const [expanded, setExpanded] = useState(true)
   const [circles, setCircles] = useState<any[]>([])
   const [pinned, setPinned] = useState<string[]>([])
   const [order, setOrder] = useState<string[]>([])
   const router = usePathname()
+
+  // Load initial state from localStorage
+  useEffect(() => {
+    const storedExpanded = localStorage.getItem("sidebarMyCirclesExpanded")
+    const storedPinned = localStorage.getItem("sidebarMyCirclesPinned")
+    const storedOrder = localStorage.getItem("sidebarMyCirclesOrder")
+    
+    if (storedExpanded) setExpanded(JSON.parse(storedExpanded))
+    if (storedPinned) setPinned(JSON.parse(storedPinned))
+    if (storedOrder) setOrder(JSON.parse(storedOrder))
+  }, [])
 
   // Persist expanded state
   useEffect(() => {
@@ -256,14 +262,6 @@ function SidebarMyCircles({ userId }: { userId: string }) {
         if (!order.length) setOrder(joined.map((c: any) => c.id))
       })
   }, [userId])
-
-  // Load pin/order state
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setPinned(JSON.parse(localStorage.getItem("sidebarMyCirclesPinned") ?? "[]"))
-      setOrder(JSON.parse(localStorage.getItem("sidebarMyCirclesOrder") ?? "[]"))
-    }
-  }, [])
 
   // Save pin/order state
   useEffect(() => {

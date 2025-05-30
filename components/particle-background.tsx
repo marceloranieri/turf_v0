@@ -1,11 +1,13 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -63,44 +65,18 @@ export function ParticleBackground() {
       }
     }
 
-    // Initialize particles
+    // Create particles
     for (let i = 0; i < particleCount; i++) {
       particles.push(new Particle())
-    }
-
-    // Connect particles with lines
-    function connectParticles() {
-      const maxDistance = 150
-
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x
-          const dy = particles[i].y - particles[j].y
-          const distance = Math.sqrt(dx * dx + dy * dy)
-
-          if (distance < maxDistance) {
-            const opacity = 1 - distance / maxDistance
-            ctx.beginPath()
-            ctx.strokeStyle = `rgba(120, 120, 255, ${opacity * 0.15})`
-            ctx.lineWidth = 0.5
-            ctx.moveTo(particles[i].x, particles[i].y)
-            ctx.lineTo(particles[j].x, particles[j].y)
-            ctx.stroke()
-          }
-        }
-      }
     }
 
     // Animation loop
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      for (const particle of particles) {
+      particles.forEach((particle) => {
         particle.update()
         particle.draw()
-      }
-
-      connectParticles()
+      })
       requestAnimationFrame(animate)
     }
 
@@ -111,5 +87,13 @@ export function ParticleBackground() {
     }
   }, [])
 
-  return <canvas ref={canvasRef} className="absolute inset-0 z-0 bg-gradient-to-b from-black via-zinc-950 to-black" />
+  if (!mounted) return null
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 -z-10"
+      style={{ background: "linear-gradient(to bottom, #0f172a, #1e293b)" }}
+    />
+  )
 }

@@ -8,9 +8,17 @@ import Timer from "@/components/Timer"
 
 export default function MobileMenu({ nextRefreshAt }: { nextRefreshAt: Date }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Prevent body scroll when menu is open
   useEffect(() => {
+    if (!mounted) return
+
     if (isOpen) {
       document.body.style.overflow = "hidden"
     } else {
@@ -19,7 +27,9 @@ export default function MobileMenu({ nextRefreshAt }: { nextRefreshAt: Date }) {
     return () => {
       document.body.style.overflow = "unset"
     }
-  }, [isOpen])
+  }, [isOpen, mounted])
+
+  if (!mounted) return null
 
   return (
     <div className="md:hidden">
@@ -33,40 +43,32 @@ export default function MobileMenu({ nextRefreshAt }: { nextRefreshAt: Date }) {
 
       <AnimatePresence>
         {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/50 z-40"
-            />
-
-            {/* Drawer */}
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 20 }}
-              className="fixed right-0 top-0 h-full w-[280px] bg-zinc-900 z-50 shadow-xl"
-            >
-              <div className="p-4 space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-white text-base font-semibold">Live Activity</h3>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="text-zinc-400 hover:text-white transition-colors"
-                    aria-label="Close menu"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <Timer nextRefreshAt={nextRefreshAt} />
+          <motion.div
+            initial={{ opacity: 0, x: "100%" }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: "100%" }}
+            transition={{ type: "spring", damping: 20 }}
+            className="fixed inset-0 z-50 bg-zinc-900"
+          >
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center p-4 border-b border-zinc-800">
+                <h2 className="text-lg font-semibold">Menu</h2>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                  aria-label="Close menu"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
                 <SidebarTabs />
               </div>
-            </motion.div>
-          </>
+              <div className="p-4 border-t border-zinc-800">
+                <Timer targetTime={nextRefreshAt} />
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

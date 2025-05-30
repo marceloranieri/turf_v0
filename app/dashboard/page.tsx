@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
 import { LeftSidebar } from "@/components/left-sidebar"
 import TopicGrid from '@/components/TopicGrid'
 import CategoryTabs from '@/components/CategoryTabs'
@@ -9,6 +8,7 @@ import { Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
 import Timer from '@/components/Timer'
+import dynamic from 'next/dynamic'
 import ErrorBoundary from '@/components/ErrorBoundary'
 
 // Dynamically import RightSidebar with SSR disabled
@@ -35,10 +35,12 @@ export default function DashboardPage() {
   const [nextRefreshAt, setNextRefreshAt] = useState(new Date(Date.now() + REFRESH_INTERVAL))
   const [mounted, setMounted] = useState(false)
 
+  // Set mounted state
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  // Load topics after mounting
   useEffect(() => {
     if (!mounted || !supabase) return
 
@@ -78,18 +80,8 @@ export default function DashboardPage() {
     ? topics
     : topics.filter(topic => topic.category === selectedCategory)
 
-  if (!mounted) {
-    return (
-      <div className="flex min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-white">
-        <LeftSidebar />
-        <div className="flex-1 p-8">
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Return null during SSR to prevent hydration mismatches
+  if (!mounted) return null
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-white">

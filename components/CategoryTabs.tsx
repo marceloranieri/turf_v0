@@ -6,14 +6,13 @@ import { categories } from "@/lib/category-colors"
 interface CategoryTabsProps {
   selected: string
   setSelected: (category: string) => void
+  categories: string[]
 }
 
-export default function CategoryTabs({ selected, setSelected }: CategoryTabsProps) {
-  const allCategories = ["All", ...Object.keys(categories)]
-
+export default function CategoryTabs({ selected, setSelected, categories: activeCategories }: CategoryTabsProps) {
   return (
     <div className="flex flex-wrap gap-2 mb-6">
-      {allCategories.map((category) => {
+      {activeCategories.map((category) => {
         const isSelected = category === selected
         const categoryInfo = category === "All" ? null : categories[category]
 

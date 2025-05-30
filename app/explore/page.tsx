@@ -43,6 +43,27 @@ type SuggestedUser = {
   preferred_categories: string[]
 }
 
+function SuggestedUserSkeleton() {
+  return (
+    <div className="flex items-center justify-between bg-zinc-800 rounded-2xl p-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-zinc-700 animate-pulse" />
+        <div className="space-y-2">
+          <div className="h-4 w-24 bg-zinc-700 rounded animate-pulse" />
+          <div className="flex gap-2">
+            <div className="h-5 w-16 bg-zinc-700 rounded-full animate-pulse" />
+            <div className="h-5 w-20 bg-zinc-700 rounded-full animate-pulse" />
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-20 bg-zinc-700 rounded animate-pulse" />
+        <div className="h-8 w-8 bg-zinc-700 rounded animate-pulse" />
+      </div>
+    </div>
+  )
+}
+
 export default function ExplorePage() {
   const supabase = useSupabase()
   const { toast } = useToast()
@@ -303,8 +324,17 @@ export default function ExplorePage() {
           </motion.div>
 
           {loading.suggested ? (
-            <div className="text-sm text-zinc-400 p-4 animate-pulse">
-              Loading suggestions...
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                >
+                  <SuggestedUserSkeleton />
+                </motion.div>
+              ))}
             </div>
           ) : suggestedUsers.length === 0 ? (
             <div className="text-sm text-zinc-500 italic p-4">

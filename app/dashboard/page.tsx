@@ -4,12 +4,11 @@ import { useEffect, useState } from 'react'
 import { LeftSidebar } from "@/components/left-sidebar"
 import TopicGrid from '@/components/TopicGrid'
 import CategoryTabs from '@/components/CategoryTabs'
-import RightSuggestionsPane from '@/components/RightSuggestionsPane'
-import { DashboardTrending } from '@/components/dashboard-trending'
 import { Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
 import Timer from '@/components/Timer'
+import RightSidebar from '@/components/right-sidebar'
 
 interface Topic {
   id: string
@@ -82,9 +81,9 @@ export default function DashboardPage() {
           <Timer nextRefreshAt={nextRefreshAt} />
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="flex gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="flex-1">
             <CategoryTabs
               selected={selectedCategory}
               setSelected={setSelectedCategory}
@@ -109,13 +108,10 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Trending Sidebar */}
-          <div className="lg:col-span-1">
-            <DashboardTrending />
-          </div>
+          {/* Right Sidebar */}
+          <RightSidebar nextRefreshAt={nextRefreshAt} />
         </div>
       </div>
-      <RightSuggestionsPane />
     </div>
   )
 }

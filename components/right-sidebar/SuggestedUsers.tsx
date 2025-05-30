@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserSupabaseClient } from "@supabase/ssr"
+import { useSupabase } from "@/components/providers/SupabaseProvider"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -16,41 +16,47 @@ type SuggestedUser = {
 }
 
 export default function SuggestedUsers() {
+  const supabase = useSupabase()
   const [users, setUsers] = useState<SuggestedUser[]>([])
   const [loading, setLoading] = useState(true)
   const [following, setFollowing] = useState<Set<string>>(new Set())
   const router = useRouter()
 
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient()
+    if (!supabase) return
 
     const fetchUsers = async () => {
-      // Get current user's follows
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: follows } = await supabase
-          .from('follows')
-          .select('following_id')
-          .eq('follower_id', user.id)
-        
-        if (follows) {
-          setFollowing(new Set(follows.map(f => f.following_id)))
+      try {
+        // Get current user's follows
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: follows } = await supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', user.id)
+          
+          if (follows) {
+            setFollowing(new Set(follows.map(f => f.following_id)))
+          }
         }
-      }
 
-      // Get suggested users
-      const { data, error } = await supabase.rpc("get_most_active_users_today")
-      if (!error && data) {
-        setUsers(data)
+        // Get suggested users
+        const { data, error } = await supabase.rpc("get_most_active_users_today")
+        if (error) throw error
+        setUsers(data || [])
+      } catch (err) {
+        console.error("Error loading suggested users:", err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     fetchUsers()
-  }, [])
+  }, [supabase])
 
   const handleFollow = async (userId: string) => {
-    const supabase = createBrowserSupabaseClient()
+    if (!supabase) return
+
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -70,10 +76,9 @@ export default function SuggestedUsers() {
           .eq('follower_id', user.id)
           .eq('following_id', userId)
 
-        if (!error) {
-          newFollowing.delete(userId)
-          setFollowing(newFollowing)
-        }
+        if (error) throw error
+        newFollowing.delete(userId)
+        setFollowing(newFollowing)
       } else {
         // Follow
         const { error } = await supabase
@@ -82,10 +87,9 @@ export default function SuggestedUsers() {
             { follower_id: user.id, following_id: userId }
           ])
 
-        if (!error) {
-          newFollowing.add(userId)
-          setFollowing(newFollowing)
-        }
+        if (error) throw error
+        newFollowing.add(userId)
+        setFollowing(newFollowing)
       }
     } catch (error) {
       console.error('Error updating follow status:', error)

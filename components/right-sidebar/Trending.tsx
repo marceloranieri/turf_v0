@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserSupabaseClient } from "@supabase/ssr"
+import { useSupabase } from "@/components/providers/SupabaseProvider"
 import { Flame } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -13,22 +13,27 @@ type TrendingMessage = {
 }
 
 export default function Trending() {
+  const supabase = useSupabase()
   const [messages, setMessages] = useState<TrendingMessage[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient()
+    if (!supabase) return
 
     const fetchMessages = async () => {
-      const { data, error } = await supabase.rpc("get_todays_top_live_messages")
-      if (!error && data) {
-        setMessages(data)
+      try {
+        const { data, error } = await supabase.rpc("get_todays_top_live_messages")
+        if (error) throw error
+        setMessages(data || [])
+      } catch (err) {
+        console.error("Error loading trending messages:", err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     fetchMessages()
-  }, [])
+  }, [supabase])
 
   if (loading) {
     return (

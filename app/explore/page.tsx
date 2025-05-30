@@ -13,6 +13,12 @@ import { Badge } from "@/components/ui/badge"
 import { getCategory } from "@/lib/category-colors"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
+import Timer from '@/components/Timer'
+import dynamic from 'next/dynamic'
+import ErrorBoundary from '@/components/ErrorBoundary'
+
+// Dynamically import RightSidebar with SSR disabled
+const RightSidebar = dynamic(() => import('@/components/right-sidebar'), { ssr: false })
 
 type Topic = {
   id: string
@@ -64,6 +70,8 @@ function SuggestedUserSkeleton() {
   )
 }
 
+const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
+
 export default function ExplorePage() {
   const supabase = useSupabase()
   const { toast } = useToast()
@@ -79,9 +87,20 @@ export default function ExplorePage() {
   const [error, setError] = useState<Error | null>(null)
   const [parent] = useAutoAnimate()
   const [following, setFollowing] = useState<Set<string>>(new Set())
+  const [selectedCategory, setSelectedCategory] = useState('All')
+  const [nextRefreshAt, setNextRefreshAt] = useState(new Date(Date.now() + REFRESH_INTERVAL))
+  const [mounted, setMounted] = useState(false)
 
+  // Set mounted state
   useEffect(() => {
-    async function loadData() {
+    setMounted(true)
+  }, [])
+
+  // Load topics after mounting
+  useEffect(() => {
+    if (!mounted || !supabase) return
+
+    async function loadTopics() {
       try {
         // Load active topics
         const { data: topics, error: topicsError } = await supabase
@@ -93,6 +112,7 @@ export default function ExplorePage() {
         if (topicsError) throw topicsError
         setActiveTopics(topics || [])
         setLoading(prev => ({ ...prev, active: false }))
+        setNextRefreshAt(new Date(Date.now() + REFRESH_INTERVAL))
 
         // Load yesterday's hottest messages
         const { data: archived, error: archivedError } = await supabase
@@ -126,8 +146,15 @@ export default function ExplorePage() {
       }
     }
 
-    loadData()
-  }, [supabase])
+    loadTopics()
+
+    // Set up refresh interval
+    const interval = setInterval(() => {
+      loadTopics()
+    }, REFRESH_INTERVAL)
+
+    return () => clearInterval(interval)
+  }, [supabase, mounted])
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -189,258 +216,133 @@ export default function ExplorePage() {
     }
   }
 
+  // Get unique categories from active topics
+  const activeCategories = ['All', ...new Set(activeTopics.map(t => t.category))]
+
+  const filteredTopics = selectedCategory === 'All'
+    ? activeTopics
+    : activeTopics.filter(topic => topic.category === selectedCategory)
+
+  // Return null during SSR to prevent hydration mismatches
+  if (!mounted) return null
+
   return (
-    <DashboardLayout>
-      <div className="p-8 space-y-12">
-        {/* Today's Circles Section */}
-        <section>
+    <div className="flex min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-white">
+      <ErrorBoundary>
+        <LeftSidebar />
+      </ErrorBoundary>
+      <div className="flex-1 p-8">
+        <ErrorBoundary>
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex items-center gap-2 mb-6"
+            className="flex items-center justify-between mb-6"
           >
-            <Users className="w-6 h-6 text-violet-500" />
-            <h2 className="text-2xl font-bold tracking-tight">Today's Circles</h2>
+            <h1 className="text-2xl font-bold tracking-tight">Explore Circles</h1>
+            <Timer 
+              nextRefreshAt={nextRefreshAt}
+              size="sm"
+              variant="subtle"
+              pulseOnEnd
+            />
           </motion.div>
+        </ErrorBoundary>
 
-          {loading.active ? (
-            <div className="text-sm text-zinc-400 p-4 animate-pulse">
-              Loading active circles...
-            </div>
-          ) : activeTopics.length === 0 ? (
-            <div className="text-sm text-zinc-500 italic p-4">
-              No active circles at the moment — be the first to start one!
-            </div>
-          ) : (
-            <div ref={parent} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activeTopics.map((topic, index) => {
-                const categoryInfo = getCategory(topic.category)
-                const isMostActive = mostActiveTopic?.id === topic.id
+        <div className="flex gap-8">
+          {/* Main Content */}
+          <div className="flex-1">
+            <ErrorBoundary>
+              <CategoryTabs
+                selected={selectedCategory}
+                setSelected={setSelectedCategory}
+                categories={activeCategories}
+              />
+            </ErrorBoundary>
 
-                return (
-                  <motion.div
-                    key={topic.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                    className="bg-zinc-800 rounded-2xl p-4 hover:scale-[1.01] transition-transform duration-150"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className={`p-2 rounded-lg ${categoryInfo.bgColor} ${categoryInfo.color}`}>
-                          {categoryInfo.icon && <categoryInfo.icon className="w-4 h-4" />}
+            {/* Content Area */}
+            <ErrorBoundary>
+              {loading.active ? (
+                <div className="text-sm text-zinc-400 p-4 animate-pulse">
+                  Loading active circles...
+                </div>
+              ) : activeTopics.length === 0 ? (
+                <div className="text-sm text-zinc-500 italic p-4">
+                  No active circles at the moment — be the first to start one!
+                </div>
+              ) : (
+                <div ref={parent} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredTopics.map((topic, index) => {
+                    const categoryInfo = getCategory(topic.category)
+                    const isMostActive = mostActiveTopic?.id === topic.id
+
+                    return (
+                      <motion.div
+                        key={topic.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className="bg-zinc-800 rounded-2xl p-4 hover:scale-[1.01] transition-transform duration-150"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className={`p-2 rounded-lg ${categoryInfo.bgColor} ${categoryInfo.color}`}>
+                              {categoryInfo.icon && <categoryInfo.icon className="w-4 h-4" />}
+                            </div>
+                            <h3 className="font-medium">{topic.title}</h3>
+                          </div>
+                          {isMostActive && (
+                            <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20">
+                              <Flame className="w-3 h-3 mr-1" />
+                              Most Active Now
+                            </Badge>
+                          )}
                         </div>
-                        <h3 className="font-medium">{topic.title}</h3>
-                      </div>
-                      {isMostActive && (
-                        <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20">
-                          <Flame className="w-3 h-3 mr-1" />
-                          Most Active Now
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`${categoryInfo.bgColor} ${categoryInfo.color} ${categoryInfo.borderColor}`}>
-                          {categoryInfo.emoji} {topic.category}
-                        </Badge>
-                        {topic.active_users && (
-                          <span className="text-sm text-zinc-400">
-                            {topic.active_users} active
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(`${window.location.origin}/chat/${topic.id}`)}
-                        >
-                          <Copy className="w-4 h-4 mr-1" />
-                          Copy Link
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          asChild
-                        >
-                          <a href={`/chat/${topic.id}`}>
-                            Join Circle
-                          </a>
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* Yesterday's Hottest Circles Section */}
-        <section>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex items-center gap-2 mb-6"
-          >
-            <Calendar className="w-6 h-6 text-violet-500" />
-            <h2 className="text-2xl font-bold tracking-tight">Yesterday's Hottest Circles</h2>
-          </motion.div>
-
-          {loading.archived ? (
-            <div className="text-sm text-zinc-400 p-4 animate-pulse">
-              Loading yesterday's highlights...
-            </div>
-          ) : yesterdaysTopics.length === 0 ? (
-            <div className="text-sm text-zinc-500 italic p-4">
-              No hot debates from yesterday — but today's are heating up!
-            </div>
-          ) : (
-            <div ref={parent} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {yesterdaysTopics.map((message, index) => (
-                <TrendingCard
-                  key={message.id}
-                  {...message}
-                  index={index}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Suggested People Section */}
-        <section>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex items-center gap-2 mb-6"
-          >
-            <UserPlus className="w-6 h-6 text-violet-500" />
-            <h2 className="text-2xl font-bold tracking-tight">Suggested People to Follow</h2>
-          </motion.div>
-
-          {loading.suggested ? (
-            <div className="space-y-4">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <SuggestedUserSkeleton />
-                </motion.div>
-              ))}
-            </div>
-          ) : suggestedUsers.length === 0 ? (
-            <div className="text-sm text-zinc-500 italic p-4">
-              We're still learning your taste — join more Circles to improve suggestions.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <AnimatePresence>
-                {suggestedUsers.map((user) => {
-                  const isFollowing = following.has(user.id)
-                  return (
-                    <motion.div
-                      key={user.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className="flex items-center justify-between bg-zinc-800 rounded-2xl p-4 hover:scale-[1.01] transition-transform duration-150"
-                    >
-                      <div className="flex items-center gap-3">
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <Avatar>
-                            <AvatarImage src={user.avatar_url} />
-                            <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                        </motion.div>
-                        <div>
-                          <h3 className="font-medium">{user.name}</h3>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {user.preferred_categories?.map((category) => {
-                              const categoryInfo = getCategory(category)
-                              return (
-                                <motion.div
-                                  key={category}
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                >
-                                  <Badge
-                                    variant="outline"
-                                    className={`${categoryInfo.bgColor} ${categoryInfo.color} ${categoryInfo.borderColor}`}
-                                  >
-                                    {categoryInfo.emoji} {category}
-                                  </Badge>
-                                </motion.div>
-                              )
-                            })}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={`${categoryInfo.bgColor} ${categoryInfo.color} ${categoryInfo.borderColor}`}>
+                              {categoryInfo.emoji} {topic.category}
+                            </Badge>
+                            {topic.active_users && (
+                              <span className="text-sm text-zinc-400">
+                                {topic.active_users} active
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyToClipboard(`${window.location.origin}/chat/${topic.id}`)}
+                            >
+                              <Copy className="w-4 h-4 mr-1" />
+                              Copy Link
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              asChild
+                            >
+                              <a href={`/chat/${topic.id}`}>
+                                Join Circle
+                              </a>
+                            </Button>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant={isFollowing ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => toggleFollow(user.id)}
-                          className={cn(
-                            "transition-all duration-200",
-                            isFollowing && "bg-violet-500 hover:bg-violet-600"
-                          )}
-                        >
-                          <AnimatePresence mode="wait">
-                            {isFollowing ? (
-                              <motion.div
-                                key="following"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                className="flex items-center gap-1"
-                              >
-                                <Check className="w-4 h-4" />
-                                Following
-                              </motion.div>
-                            ) : (
-                              <motion.div
-                                key="follow"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                className="flex items-center gap-1"
-                              >
-                                <UserPlus className="w-4 h-4" />
-                                Follow
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </Button>
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <Button variant="ghost" size="sm" asChild>
-                            <a href={`/profile/${user.id}`}>
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </Button>
-                        </motion.div>
-                      </div>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-            </div>
-          )}
-        </section>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              )}
+            </ErrorBoundary>
+          </div>
+
+          {/* Right Sidebar */}
+          <ErrorBoundary>
+            <RightSidebar nextRefreshAt={nextRefreshAt} />
+          </ErrorBoundary>
+        </div>
       </div>
-    </DashboardLayout>
+    </div>
   )
 }

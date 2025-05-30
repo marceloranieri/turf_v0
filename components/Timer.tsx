@@ -7,8 +7,7 @@ function getTimeRemaining(targetDate: Date) {
   const seconds = Math.floor((total / 1000) % 60)
   const minutes = Math.floor((total / 1000 / 60) % 60)
   const hours = Math.floor((total / (1000 * 60 * 60)) % 24)
-  const days = Math.floor(total / (1000 * 60 * 60 * 24))
-  return { total, days, hours, minutes, seconds }
+  return { total, hours, minutes, seconds }
 }
 
 export default function Timer({ nextRefreshAt }: { nextRefreshAt: Date }) {
@@ -24,7 +23,6 @@ export default function Timer({ nextRefreshAt }: { nextRefreshAt: Date }) {
   return (
     <div className="flex items-center bg-zinc-800 rounded-xl px-3 py-1 gap-4 text-center text-white text-xs font-medium">
       {[
-        { label: 'Days', value: remaining.days },
         { label: 'Hours', value: remaining.hours },
         { label: 'Minutes', value: remaining.minutes },
         { label: 'Seconds', value: remaining.seconds },

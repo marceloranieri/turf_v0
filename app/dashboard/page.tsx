@@ -10,6 +10,7 @@ import { useSupabase } from '@/components/providers/SupabaseProvider'
 import Timer from '@/components/Timer'
 import dynamic from 'next/dynamic'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { startOfToday, endOfToday } from 'date-fns'
 
 // Dynamically import RightSidebar with SSR disabled
 const RightSidebar = dynamic(() => import('@/components/right-sidebar'), { ssr: false })
@@ -40,23 +41,40 @@ export default function DashboardPage() {
     setMounted(true)
   }, [])
 
-  // Load topics after mounting
+  // Load today's circles from daily_topics (joined with topics)
   useEffect(() => {
     if (!mounted || !supabase) return
 
     async function loadTopics() {
+      setLoading(true)
+      setError(null)
       try {
+        // Get today's date in UTC
+        const today = new Date()
+        const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0))
+        const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 59, 59))
+        // Query daily_topics for today, join with topics
         const { data, error } = await supabase
-          .from("topics")
-          .select("*")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
+          .from('daily_topics')
+          .select('topic_id, topics(*), active_users, message_count, created_at')
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString())
+          .order('created_at', { ascending: false })
 
         if (error) throw error
-        setTopics(data || [])
+        // Map to Topic[]
+        const mapped: Topic[] = (data || []).map((row: any) => ({
+          id: row.topics.id,
+          title: row.topics.title,
+          category: row.topics.category,
+          created_at: row.topics.created_at,
+          description: row.topics.description,
+          active_users: row.active_users,
+          message_count: row.message_count
+        }))
+        setTopics(mapped)
         setNextRefreshAt(new Date(Date.now() + REFRESH_INTERVAL))
       } catch (err) {
-        console.error('Error loading topics:', err)
         setError(err instanceof Error ? err.message : 'Failed to load topics')
       } finally {
         setLoading(false)
@@ -64,17 +82,14 @@ export default function DashboardPage() {
     }
 
     loadTopics()
-
-    // Set up refresh interval
     const interval = setInterval(() => {
       loadTopics()
     }, REFRESH_INTERVAL)
-
     return () => clearInterval(interval)
   }, [supabase, mounted])
 
   // Get unique categories from active topics
-  const activeCategories = ['All', ...new Set(topics.map(t => t.category))]
+  const activeCategories = ['All', ...Array.from(new Set(topics.map(t => t.category)))]
 
   const filteredTopics = selectedCategory === 'All'
     ? topics
@@ -97,7 +112,12 @@ export default function DashboardPage() {
             className="flex items-center justify-between mb-6"
           >
             <h1 className="text-2xl font-bold tracking-tight">Today's Circles</h1>
-            <Timer nextRefreshAt={nextRefreshAt} />
+            <Timer 
+              nextRefreshAt={nextRefreshAt}
+              size="sm"
+              variant="subtle"
+              pulseOnEnd
+            />
           </motion.div>
         </ErrorBoundary>
 

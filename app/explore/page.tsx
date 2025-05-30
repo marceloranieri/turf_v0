@@ -17,29 +17,26 @@ export default async function ExplorePage() {
   return (
     <div className="flex min-h-screen bg-zinc-900 text-white">
       <LeftSidebar />
-
       <main className="flex-1 p-8">
         <div className="mb-6 flex items-center gap-4">
-          <Search className="h-5 w-5 text-zinc-400" />
-          <Input placeholder="Search debates or people..." />
-          <Button variant="secondary">Search</Button>
+          <Input type="text" placeholder="Search debates..." className="w-full" />
+          <Button variant="secondary" size="icon">
+            <Search />
+          </Button>
         </div>
 
-        <h2 className="text-xl font-semibold mb-4">Yesterday’s Top Discussions</h2>
-
-        <div className="grid grid-cols-1 gap-4">
+        <h2 className="text-xl font-semibold mb-4">Yesterday's Highlights</h2>
+        <ul className="space-y-2">
           {yesterdaysTopics?.map((topic: any) => (
-            <div key={topic.id} className="rounded-lg border border-zinc-700 p-4 hover:bg-zinc-800 transition">
-              <h3 className="text-lg font-medium">{topic.topic_title}</h3>
-              <p className="text-sm text-zinc-400 mt-1">{topic.message}</p>
-              <p className="text-xs text-zinc-500 mt-2">👍 {topic.upvotes}</p>
-            </div>
+            <li
+              key={topic.id}
+              className="bg-zinc-800 p-4 rounded-lg shadow transition hover:bg-zinc-700"
+            >
+              <h3 className="font-medium text-lg">{topic.title}</h3>
+              <p className="text-sm text-zinc-400">{topic.description}</p>
+            </li>
           ))}
-
-          {!yesterdaysTopics?.length && (
-            <p className="text-zinc-400">No hot topics from yesterday yet.</p>
-          )}
-        </div>
+        </ul>
       </main>
     </div>
   )

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createBrowserSupabaseClient } from "@supabase/ssr"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 
 type SuggestedUser = {
   id: string
@@ -91,41 +92,67 @@ export default function SuggestedUsers() {
     }
   }
 
-  if (loading) return null
-  if (!users.length) return <p className="text-zinc-500 text-sm italic">No active users yet.</p>
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="h-16 bg-zinc-800 rounded-xl animate-pulse"
+          />
+        ))}
+      </div>
+    )
+  }
+
+  if (!users.length) {
+    return (
+      <p className="text-zinc-500 text-sm italic">
+        No active users yet.
+      </p>
+    )
+  }
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-white text-sm font-semibold">Suggested Users</h3>
-      {users.map((user) => (
-        <div
+    <div className="space-y-3">
+      {users.map((user, index) => (
+        <motion.div
           key={user.id}
-          className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2 hover:bg-zinc-700 transition"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+          className="group bg-zinc-800 p-3 rounded-xl hover:bg-zinc-700 hover:scale-[1.01] transition-all duration-200"
         >
-          <div className="flex items-center gap-3">
-            <Image
-              src={user.avatar_url || "/default-avatar.png"}
-              alt={user.username}
-              width={32}
-              height={32}
-              className="rounded-full object-cover"
-            />
-            <div className="flex flex-col text-sm">
-              <span className="text-white">{user.username}</span>
-              <span className="text-zinc-400 text-xs">{user.bio || "Active on Turf"}</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <Image
+                src={user.avatar_url || "/default-avatar.png"}
+                alt={user.username}
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+              />
+              <div className="flex flex-col min-w-0">
+                <span className="text-white text-sm font-medium truncate">
+                  {user.username}
+                </span>
+                <span className="text-zinc-400 text-xs truncate">
+                  {user.bio || "Active on Turf"}
+                </span>
+              </div>
             </div>
+            <button
+              onClick={() => handleFollow(user.id)}
+              className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                following.has(user.id)
+                  ? 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                  : 'bg-indigo-500 text-white hover:bg-indigo-600'
+              }`}
+            >
+              {following.has(user.id) ? 'Following' : 'Follow'}
+            </button>
           </div>
-          <button
-            onClick={() => handleFollow(user.id)}
-            className={`text-xs transition-colors ${
-              following.has(user.id)
-                ? 'text-zinc-400 hover:text-zinc-300'
-                : 'text-indigo-400 hover:text-indigo-300'
-            }`}
-          >
-            {following.has(user.id) ? 'Following' : 'Follow'}
-          </button>
-        </div>
+        </motion.div>
       ))}
     </div>
   )

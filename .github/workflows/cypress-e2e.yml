@@ -1,0 +1,64 @@
+name: Cypress QA
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Start Supabase
+        run: |
+          docker-compose up -d
+          sleep 10 # wait for Supabase to be ready
+
+      - name: Start Turf App
+        run: |
+          npm run build
+          npm run start &
+          sleep 10 # wait for app to be up
+
+      - name: Run Cypress E2E Tests
+        uses: cypress-io/github-action@v5
+        with:
+          spec: cypress/e2e/turf_360.cy.js
+          browser: chrome
+          record: false
+          parallel: false
+          group: 'E2E Tests'
+          config: baseUrl=http://localhost:3000
+
+      - name: Save Cypress JSON Report
+        run: |
+          mkdir -p logs
+          cp cypress/results/*.json logs/
+        if: always()
+
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: turf-e2e-results
+          path: logs
+        if: always()
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose down
+          pkill -f "npm run start" || true 

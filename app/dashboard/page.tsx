@@ -8,6 +8,7 @@ import RefreshTimer from '@/components/RefreshTimer'
 import RightSuggestionsPane from '@/components/RightSuggestionsPane'
 import { DashboardTrending } from '@/components/dashboard-trending'
 import { Loader2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface Topic {
   id: string
@@ -70,13 +71,18 @@ export default function DashboardPage() {
     : topics.filter(topic => topic.category?.toLowerCase() === selectedCategory.toLowerCase())
 
   return (
-    <div className="flex min-h-screen bg-zinc-900 text-white">
+    <div className="flex min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-white">
       <LeftSidebar />
       <div className="flex-1 p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Today's Circles</h1>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex justify-between items-center mb-6"
+        >
+          <h1 className="text-2xl font-bold tracking-tight">Today's Circles</h1>
           <RefreshTimer />
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}

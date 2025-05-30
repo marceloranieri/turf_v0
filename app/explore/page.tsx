@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { MessageSquare, Heart, Calendar } from "lucide-react"
+import { Calendar } from "lucide-react"
 import { useSupabase } from "@/components/providers/SupabaseProvider"
+import { TrendingCard } from "@/components/trending-card"
+import { useAutoAnimate } from "@formkit/auto-animate/react"
+import { motion } from "framer-motion"
 
 type ArchivedMessage = {
   id: string
@@ -20,6 +21,7 @@ export default function ExplorePage() {
   const [messages, setMessages] = useState<ArchivedMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [parent] = useAutoAnimate()
 
   useEffect(() => {
     async function loadArchivedMessages() {
@@ -43,13 +45,18 @@ export default function ExplorePage() {
   return (
     <DashboardLayout>
       <div className="p-8">
-        <div className="flex items-center gap-2 mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex items-center gap-2 mb-6"
+        >
           <Calendar className="w-6 h-6 text-violet-500" />
-          <h1 className="text-2xl font-bold">Yesterday's Highlights</h1>
-        </div>
+          <h1 className="text-2xl font-bold tracking-tight">Yesterday's Highlights</h1>
+        </motion.div>
 
         {loading ? (
-          <div className="text-sm text-zinc-400 p-4">
+          <div className="text-sm text-zinc-400 p-4 animate-pulse">
             Loading archived messages...
           </div>
         ) : error ? (
@@ -61,32 +68,13 @@ export default function ExplorePage() {
             No archived messages found.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {messages.map((message) => (
-              <Card
+          <div ref={parent} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {messages.map((message, index) => (
+              <TrendingCard
                 key={message.id}
-                className="bg-zinc-800/50 border-zinc-700/50 p-4 hover:bg-zinc-800/70 transition-colors"
-              >
-                <h3 className="font-medium text-sm mb-2">{message.title}</h3>
-                <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <Badge variant="outline" className="bg-zinc-800/80 text-zinc-300 border-zinc-700">
-                    {message.category}
-                  </Badge>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <Heart className="w-3 h-3" />
-                      <span>{message.engagement_score}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="w-3 h-3" />
-                      <span>{message.engagement_score}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-zinc-500">
-                  {new Date(message.created_at).toLocaleDateString()}
-                </div>
-              </Card>
+                {...message}
+                index={index}
+              />
             ))}
           </div>
         )}

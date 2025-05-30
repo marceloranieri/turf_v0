@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { TrendingUp, MessageSquare, Heart } from "lucide-react"
+import { TrendingUp } from "lucide-react"
 import { useSupabase } from "@/components/providers/SupabaseProvider"
+import { TrendingCard } from "@/components/trending-card"
+import { useAutoAnimate } from "@formkit/auto-animate/react"
 
 type TrendingMessage = {
   id: string
@@ -18,6 +18,7 @@ export function DashboardTrending() {
   const [messages, setMessages] = useState<TrendingMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [parent] = useAutoAnimate()
 
   useEffect(() => {
     async function loadTrendingMessages() {
@@ -40,7 +41,7 @@ export function DashboardTrending() {
 
   if (loading) {
     return (
-      <div className="text-sm text-zinc-400 p-4">
+      <div className="text-sm text-zinc-400 p-4 animate-pulse">
         Loading trending messages...
       </div>
     )
@@ -58,31 +59,17 @@ export function DashboardTrending() {
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="w-5 h-5 text-violet-500" />
-        <h2 className="text-lg font-semibold">Trending</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Trending</h2>
       </div>
-      {messages.map((message) => (
-        <Card
-          key={message.id}
-          className="bg-zinc-800/50 border-zinc-700/50 p-3 hover:bg-zinc-800/70 transition-colors"
-        >
-          <h3 className="font-medium text-sm mb-2">{message.title}</h3>
-          <div className="flex items-center justify-between text-xs text-zinc-400">
-            <Badge variant="outline" className="bg-zinc-800/80 text-zinc-300 border-zinc-700">
-              {message.category}
-            </Badge>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <Heart className="w-3 h-3" />
-                <span>{message.engagement_score}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <MessageSquare className="w-3 h-3" />
-                <span>{message.engagement_score}</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-      ))}
+      <div ref={parent} className="space-y-3">
+        {messages.map((message, index) => (
+          <TrendingCard
+            key={message.id}
+            {...message}
+            index={index}
+          />
+        ))}
+      </div>
     </div>
   )
 } 

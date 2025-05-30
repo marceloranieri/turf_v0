@@ -1,6 +1,6 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import RightSuggestionsPane from '@/components/RightSuggestionsPane'
+import RightSidebar from '@/components/right-sidebar'
 
 export default async function SuggestionsPage() {
   const supabase = createServerComponentClient({ cookies })
@@ -62,7 +62,7 @@ export default async function SuggestionsPage() {
           </div>
         )}
       </main>
-      <RightSuggestionsPane />
+      <RightSidebar nextRefreshAt={new Date(Date.now() + 5 * 60 * 1000)} />
     </div>
   )
 } 

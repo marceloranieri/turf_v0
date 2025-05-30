@@ -29,8 +29,15 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [nextRefreshAt, setNextRefreshAt] = useState(new Date(Date.now() + REFRESH_INTERVAL))
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted || !supabase) return
+
     async function loadTopics() {
       try {
         const { data, error } = await supabase
@@ -58,7 +65,7 @@ export default function DashboardPage() {
     }, REFRESH_INTERVAL)
 
     return () => clearInterval(interval)
-  }, [supabase])
+  }, [supabase, mounted])
 
   // Get unique categories from active topics
   const activeCategories = ['All', ...new Set(topics.map(t => t.category))]
@@ -66,6 +73,19 @@ export default function DashboardPage() {
   const filteredTopics = selectedCategory === 'All'
     ? topics
     : topics.filter(topic => topic.category === selectedCategory)
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-white">
+        <LeftSidebar />
+        <div className="flex-1 p-8">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-white">

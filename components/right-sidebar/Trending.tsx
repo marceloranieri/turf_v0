@@ -16,9 +16,14 @@ export default function Trending() {
   const supabase = useSupabase()
   const [messages, setMessages] = useState<TrendingMessage[]>([])
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (!supabase) return
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted || !supabase) return
 
     const fetchMessages = async () => {
       try {
@@ -33,7 +38,20 @@ export default function Trending() {
     }
 
     fetchMessages()
-  }, [supabase])
+  }, [supabase, mounted])
+
+  if (!mounted) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="h-20 bg-zinc-800 rounded-xl animate-pulse"
+          />
+        ))}
+      </div>
+    )
+  }
 
   if (loading) {
     return (

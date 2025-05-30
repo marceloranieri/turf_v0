@@ -1,12 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { TrendingUp } from "lucide-react"
-import { useSupabase } from "@/components/providers/SupabaseProvider"
-import { TrendingCard } from "@/components/trending-card"
-import { useAutoAnimate } from "@formkit/auto-animate/react"
+import { motion } from 'framer-motion'
+import TrendingMessageItem from './TrendingMessageItem'
 
-type TrendingMessage = {
+interface TrendingMessage {
   id: string
   title: string
   category: string
@@ -14,60 +11,45 @@ type TrendingMessage = {
 }
 
 export function DashboardTrending() {
-  const supabase = useSupabase()
-  const [messages, setMessages] = useState<TrendingMessage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const [parent] = useAutoAnimate()
-
-  useEffect(() => {
-    async function loadTrendingMessages() {
-      try {
-        const { data, error } = await supabase
-          .rpc("get_todays_top_live_messages")
-
-        if (error) throw error
-        setMessages(data || [])
-      } catch (err) {
-        console.error("Error loading trending messages:", err)
-        setError(err instanceof Error ? err : new Error("Failed to load trending messages"))
-      } finally {
-        setLoading(false)
-      }
+  // This would be replaced with real data from your API
+  const trendingMessages: TrendingMessage[] = [
+    {
+      id: '1',
+      title: 'The future of AI in healthcare',
+      category: 'Technology',
+      engagement_score: 95
+    },
+    {
+      id: '2',
+      title: 'Sustainable living tips for urban dwellers',
+      category: 'Lifestyle',
+      engagement_score: 88
+    },
+    {
+      id: '3',
+      title: 'Latest developments in quantum computing',
+      category: 'Science',
+      engagement_score: 82
     }
-
-    loadTrendingMessages()
-  }, [supabase])
-
-  if (loading) {
-    return (
-      <div className="text-sm text-zinc-400 p-4 animate-pulse">
-        Loading trending messages...
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="text-sm text-red-400 p-4">
-        {error.message}
-      </div>
-    )
-  }
+  ]
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-violet-500" />
-        <h2 className="text-lg font-semibold tracking-tight">Trending</h2>
-      </div>
-      <div ref={parent} className="space-y-3">
-        {messages.map((message, index) => (
-          <TrendingCard
+    <div className="bg-zinc-900/50 rounded-2xl p-4">
+      <h2 className="text-lg font-semibold mb-4">Trending Now</h2>
+      <div className="space-y-3">
+        {trendingMessages.map((message, index) => (
+          <motion.div
             key={message.id}
-            {...message}
-            index={index}
-          />
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+          >
+            <TrendingMessageItem
+              message={message.title}
+              category={message.category}
+              engagementScore={message.engagement_score}
+            />
+          </motion.div>
         ))}
       </div>
     </div>

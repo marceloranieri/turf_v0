@@ -1,10 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { getCategory } from '@/lib/category-colors'
-import { Users, MessageSquare } from 'lucide-react'
+import TopicCard from './TopicCard'
+import { useRouter } from 'next/navigation'
 
 interface Topic {
   id: string
@@ -63,6 +61,8 @@ function TopicSkeleton() {
 }
 
 export default function TopicGrid({ topics, loading = false }: TopicGridProps) {
+  const router = useRouter()
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -82,75 +82,23 @@ export default function TopicGrid({ topics, loading = false }: TopicGridProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {topics.map((topic, index) => {
-        const categoryInfo = getCategory(topic.category)
-        const Icon = categoryInfo.icon
-
-        return (
-          <motion.div
-            key={topic.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-            whileHover={{ scale: 1.01 }}
-            className="group"
-          >
-            <Card className="bg-zinc-800/50 border-zinc-700/50 p-4 md:p-5 hover:bg-zinc-800/70 transition-all duration-150 hover:shadow-lg hover:shadow-zinc-900/20">
-              <div className="space-y-4">
-                {/* Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-2 rounded-lg ${categoryInfo.bgColor} ${categoryInfo.color}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium group-hover:text-white transition-colors">{topic.title}</h3>
-                      <Badge 
-                        variant="outline" 
-                        className={`mt-1 ${categoryInfo.bgColor} ${categoryInfo.color} ${categoryInfo.borderColor}`}
-                      >
-                        {categoryInfo.emoji} {topic.category}
-                      </Badge>
-                    </div>
-                  </div>
-                  {topic.active_users && topic.active_users > 10 && (
-                    <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20">
-                      🔥 Trending
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Description */}
-                {topic.description && (
-                  <p className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                    {topic.description}
-                  </p>
-                )}
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1 text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                      <Users className="w-4 h-4" />
-                      <span>{topic.active_users || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                      <MessageSquare className="w-4 h-4" />
-                      <span>{topic.message_count || 0}</span>
-                    </div>
-                  </div>
-                  <a
-                    href={`/chat/${topic.id}`}
-                    className="text-sm text-violet-400 hover:text-violet-300 transition-colors"
-                  >
-                    Join Circle →
-                  </a>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        )
-      })}
+      {topics.map((topic, index) => (
+        <motion.div
+          key={topic.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: index * 0.1 }}
+        >
+          <TopicCard
+            title={topic.title}
+            category={topic.category}
+            userCount={topic.active_users || 0}
+            isTrending={topic.active_users && topic.active_users > 10}
+            onJoin={() => router.push(`/chat/${topic.id}`)}
+            onCopyLink={() => navigator.clipboard.writeText(`${window.location.origin}/chat/${topic.id}`)}
+          />
+        </motion.div>
+      ))}
     </div>
   )
 }

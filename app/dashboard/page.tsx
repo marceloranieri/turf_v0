@@ -6,6 +6,7 @@ import TopicGrid from '@/components/TopicGrid'
 import CategoryTabs from '@/components/CategoryTabs'
 import RefreshTimer from '@/components/RefreshTimer'
 import RightSuggestionsPane from '@/components/RightSuggestionsPane'
+import { DashboardTrending } from '@/components/dashboard-trending'
 import { Loader2 } from 'lucide-react'
 
 interface Topic {
@@ -77,27 +78,37 @@ export default function DashboardPage() {
           <RefreshTimer />
         </div>
 
-        <CategoryTabs
-          selected={selectedCategory}
-          setSelected={setSelectedCategory}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            <CategoryTabs
+              selected={selectedCategory}
+              setSelected={setSelectedCategory}
+            />
 
-        {/* Content Area */}
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+            {/* Content Area */}
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+              </div>
+            ) : error ? (
+              <div className="text-red-400 text-center py-8">
+                {error}
+              </div>
+            ) : filteredTopics.length === 0 ? (
+              <div className="text-zinc-500 text-center py-8">
+                No topics available in this category.
+              </div>
+            ) : (
+              <TopicGrid topics={filteredTopics} />
+            )}
           </div>
-        ) : error ? (
-          <div className="text-red-400 text-center py-8">
-            {error}
+
+          {/* Trending Sidebar */}
+          <div className="lg:col-span-1">
+            <DashboardTrending />
           </div>
-        ) : filteredTopics.length === 0 ? (
-          <div className="text-zinc-500 text-center py-8">
-            No topics available in this category.
-          </div>
-        ) : (
-          <TopicGrid topics={filteredTopics} />
-        )}
+        </div>
       </div>
       <RightSuggestionsPane />
     </div>

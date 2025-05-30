@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createBrowserSupabaseClient } from "@supabase/ssr"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 type SuggestedUser = {
   id: string
@@ -10,16 +11,33 @@ type SuggestedUser = {
   avatar_url: string
   bio: string
   message_count: number
+  is_following?: boolean
 }
 
 export default function SuggestedUsers() {
   const [users, setUsers] = useState<SuggestedUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [following, setFollowing] = useState<Set<string>>(new Set())
+  const router = useRouter()
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
 
     const fetchUsers = async () => {
+      // Get current user's follows
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: follows } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', user.id)
+        
+        if (follows) {
+          setFollowing(new Set(follows.map(f => f.following_id)))
+        }
+      }
+
+      // Get suggested users
       const { data, error } = await supabase.rpc("get_most_active_users_today")
       if (!error && data) {
         setUsers(data)
@@ -29,6 +47,49 @@ export default function SuggestedUsers() {
 
     fetchUsers()
   }, [])
+
+  const handleFollow = async (userId: string) => {
+    const supabase = createBrowserSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    const isFollowing = following.has(userId)
+    const newFollowing = new Set(following)
+
+    try {
+      if (isFollowing) {
+        // Unfollow
+        const { error } = await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', userId)
+
+        if (!error) {
+          newFollowing.delete(userId)
+          setFollowing(newFollowing)
+        }
+      } else {
+        // Follow
+        const { error } = await supabase
+          .from('follows')
+          .insert([
+            { follower_id: user.id, following_id: userId }
+          ])
+
+        if (!error) {
+          newFollowing.add(userId)
+          setFollowing(newFollowing)
+        }
+      }
+    } catch (error) {
+      console.error('Error updating follow status:', error)
+    }
+  }
 
   if (loading) return null
   if (!users.length) return <p className="text-zinc-500 text-sm italic">No active users yet.</p>
@@ -54,7 +115,16 @@ export default function SuggestedUsers() {
               <span className="text-zinc-400 text-xs">{user.bio || "Active on Turf"}</span>
             </div>
           </div>
-          <button className="text-indigo-400 text-xs hover:underline">Follow</button>
+          <button
+            onClick={() => handleFollow(user.id)}
+            className={`text-xs transition-colors ${
+              following.has(user.id)
+                ? 'text-zinc-400 hover:text-zinc-300'
+                : 'text-indigo-400 hover:text-indigo-300'
+            }`}
+          >
+            {following.has(user.id) ? 'Following' : 'Follow'}
+          </button>
         </div>
       ))}
     </div>

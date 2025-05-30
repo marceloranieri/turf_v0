@@ -1,15 +1,22 @@
--- Seed admin user
-insert into profiles (id, username, role)
-values ('your-auth-user-id', 'Marcelo', 'admin');
+-- seed.sql
 
--- Seed sample topics
-insert into topics (title, slug, question, category, date, description)
-values 
-  ('Why Donkeys Are Underrated', 'why-donkeys-are-underrated', 'What makes donkeys special?', 'Animals', CURRENT_DATE, 'A deep dive into the unique qualities of donkeys.'),
-  ('The Future of AI', 'future-of-ai', 'How will AI shape our future?', 'Technology', CURRENT_DATE, 'Exploring the potential impacts of artificial intelligence.');
+-- Insert one topic (required for daily_topics and message tests)
+insert into topics (id, title, slug, question, category, date, is_active)
+values (
+  '22222222-2222-2222-2222-222222222222',
+  'Should pineapple go on pizza?',
+  'pineapple-on-pizza',
+  'Is pineapple a valid topping?',
+  'food',
+  CURRENT_DATE,
+  true
+);
 
--- Seed sample messages
-insert into messages (topic_id, user_id, content, upvotes)
-values 
-  ((select id from topics where slug = 'why-donkeys-are-underrated'), 'your-auth-user-id', 'Donkeys are incredibly loyal and intelligent!', 5),
-  ((select id from topics where slug = 'future-of-ai'), 'your-auth-user-id', 'AI will revolutionize healthcare and education.', 3); 
+-- Link topic to daily_topics for today
+insert into daily_topics (id, topic_id, date, created_at)
+values (
+  '33333333-3333-3333-3333-333333333333',
+  '22222222-2222-2222-2222-222222222222',
+  CURRENT_DATE,
+  now()
+);

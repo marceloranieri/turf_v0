@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { Calendar, Users, Flame, Copy, UserPlus, ExternalLink } from "lucide-react"
+import { Calendar, Users, Flame, Copy, UserPlus, ExternalLink, Check } from "lucide-react"
 import { useSupabase } from "@/components/providers/SupabaseProvider"
 import { TrendingCard } from "@/components/trending-card"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { getCategory } from "@/lib/category-colors"
+import { useToast } from "@/components/ui/use-toast"
+import { cn } from "@/lib/utils"
 
 type Topic = {
   id: string
@@ -43,6 +45,7 @@ type SuggestedUser = {
 
 export default function ExplorePage() {
   const supabase = useSupabase()
+  const { toast } = useToast()
   const [activeTopics, setActiveTopics] = useState<Topic[]>([])
   const [yesterdaysTopics, setYesterdaysTopics] = useState<ArchivedMessage[]>([])
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([])
@@ -54,6 +57,7 @@ export default function ExplorePage() {
   })
   const [error, setError] = useState<Error | null>(null)
   const [parent] = useAutoAnimate()
+  const [following, setFollowing] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function loadData() {
@@ -107,9 +111,60 @@ export default function ExplorePage() {
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
-      // You might want to add a toast notification here
+      toast({
+        title: "Link copied!",
+        description: "Share this circle with your friends",
+        duration: 2000,
+      })
     } catch (err) {
       console.error("Failed to copy:", err)
+      toast({
+        title: "Failed to copy",
+        description: "Please try again",
+        variant: "destructive",
+        duration: 2000,
+      })
+    }
+  }
+
+  const toggleFollow = async (userId: string) => {
+    try {
+      const isFollowing = following.has(userId)
+      const { error } = await supabase
+        .from("follows")
+        .upsert({
+          follower_id: supabase.auth.getUser()?.data?.user?.id,
+          following_id: userId,
+          created_at: new Date().toISOString(),
+        }, {
+          onConflict: "follower_id,following_id"
+        })
+
+      if (error) throw error
+
+      setFollowing(prev => {
+        const next = new Set(prev)
+        if (isFollowing) {
+          next.delete(userId)
+        } else {
+          next.add(userId)
+        }
+        return next
+      })
+
+      toast({
+        title: isFollowing ? "Unfollowed" : "Following",
+        description: isFollowing ? "You've unfollowed this user" : "You're now following this user",
+        duration: 2000,
+      })
+    } catch (err) {
+      console.error("Failed to toggle follow:", err)
+      toast({
+        title: "Error",
+        description: "Failed to update follow status",
+        variant: "destructive",
+        duration: 2000,
+      })
     }
   }
 
@@ -257,48 +312,101 @@ export default function ExplorePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {suggestedUsers.map((user) => (
-                <motion.div
-                  key={user.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between bg-zinc-800 rounded-2xl p-4 hover:scale-[1.01] transition-transform duration-150"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={user.avatar_url} />
-                      <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium">{user.name}</h3>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {user.preferred_categories?.map((category) => {
-                          const categoryInfo = getCategory(category)
-                          return (
-                            <Badge
-                              key={category}
-                              variant="outline"
-                              className={`${categoryInfo.bgColor} ${categoryInfo.color} ${categoryInfo.borderColor}`}
-                            >
-                              {categoryInfo.emoji} {category}
-                            </Badge>
-                          )
-                        })}
+              <AnimatePresence>
+                {suggestedUsers.map((user) => {
+                  const isFollowing = following.has(user.id)
+                  return (
+                    <motion.div
+                      key={user.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="flex items-center justify-between bg-zinc-800 rounded-2xl p-4 hover:scale-[1.01] transition-transform duration-150"
+                    >
+                      <div className="flex items-center gap-3">
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Avatar>
+                            <AvatarImage src={user.avatar_url} />
+                            <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                        </motion.div>
+                        <div>
+                          <h3 className="font-medium">{user.name}</h3>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {user.preferred_categories?.map((category) => {
+                              const categoryInfo = getCategory(category)
+                              return (
+                                <motion.div
+                                  key={category}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  <Badge
+                                    variant="outline"
+                                    className={`${categoryInfo.bgColor} ${categoryInfo.color} ${categoryInfo.borderColor}`}
+                                  >
+                                    {categoryInfo.emoji} {category}
+                                  </Badge>
+                                </motion.div>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      Follow
-                    </Button>
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href={`/profile/${user.id}`}>
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={isFollowing ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleFollow(user.id)}
+                          className={cn(
+                            "transition-all duration-200",
+                            isFollowing && "bg-violet-500 hover:bg-violet-600"
+                          )}
+                        >
+                          <AnimatePresence mode="wait">
+                            {isFollowing ? (
+                              <motion.div
+                                key="following"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className="flex items-center gap-1"
+                              >
+                                <Check className="w-4 h-4" />
+                                Following
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="follow"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className="flex items-center gap-1"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                Follow
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </Button>
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Button variant="ghost" size="sm" asChild>
+                            <a href={`/profile/${user.id}`}>
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </Button>
+                        </motion.div>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
             </div>
           )}
         </section>

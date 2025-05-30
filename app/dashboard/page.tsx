@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react'
 import { LeftSidebar } from "@/components/left-sidebar"
 import TopicGrid from '@/components/TopicGrid'
 import CategoryTabs from '@/components/CategoryTabs'
-import { Clock } from 'lucide-react'
 import RightSuggestionsPane from '@/components/RightSuggestionsPane'
 import { DashboardTrending } from '@/components/dashboard-trending'
 import { Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
-import { formatDistanceToNow } from 'date-fns'
+import Timer from '@/components/Timer'
 
 interface Topic {
   id: string
@@ -30,7 +29,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [timeUntilRefresh, setTimeUntilRefresh] = useState(REFRESH_INTERVAL)
+  const [nextRefreshAt, setNextRefreshAt] = useState(new Date(Date.now() + REFRESH_INTERVAL))
 
   useEffect(() => {
     async function loadTopics() {
@@ -43,6 +42,7 @@ export default function DashboardPage() {
 
         if (error) throw error
         setTopics(data || [])
+        setNextRefreshAt(new Date(Date.now() + REFRESH_INTERVAL))
       } catch (err) {
         console.error('Error loading topics:', err)
         setError(err instanceof Error ? err.message : 'Failed to load topics')
@@ -61,31 +61,12 @@ export default function DashboardPage() {
     return () => clearInterval(interval)
   }, [supabase])
 
-  // Timer effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeUntilRefresh(prev => {
-        if (prev <= 0) return REFRESH_INTERVAL
-        return prev - 1000
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
-
   // Get unique categories from active topics
   const activeCategories = ['All', ...new Set(topics.map(t => t.category))]
 
   const filteredTopics = selectedCategory === 'All'
     ? topics
     : topics.filter(topic => topic.category === selectedCategory)
-
-  const formatTimeRemaining = (ms: number) => {
-    const hours = Math.floor(ms / (1000 * 60 * 60))
-    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((ms % (1000 * 60)) / 1000)
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-  }
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-white">
@@ -95,13 +76,10 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex justify-between items-center mb-6"
+          className="flex items-center justify-between mb-6"
         >
           <h1 className="text-2xl font-bold tracking-tight">Today's Circles</h1>
-          <div className="flex items-center gap-1 text-sm text-zinc-400 italic">
-            <Clock size={16} className="text-zinc-500" />
-            Next refresh in: {formatTimeRemaining(timeUntilRefresh)}
-          </div>
+          <Timer nextRefreshAt={nextRefreshAt} />
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

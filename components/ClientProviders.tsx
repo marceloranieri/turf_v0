@@ -34,5 +34,14 @@ export default function ClientProviders({
 
 function AuthProviderWithSupabase({ children }: { children: React.ReactNode }) {
   const supabase = useSupabase()
+  
+  if (!supabase) {
+    return (
+      <div className="text-zinc-400 text-sm p-6">
+        Connecting to Turf...
+      </div>
+    )
+  }
+
   return <AuthProvider supabase={supabase}>{children}</AuthProvider>
 } 

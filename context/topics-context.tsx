@@ -26,6 +26,14 @@ const TopicsContext = createContext<TopicsContextType | undefined>(undefined)
 
 export function TopicsProvider({ children }: { children: React.ReactNode }) {
   const { user, supabase } = useAuth()
+
+  if (!supabase) {
+    if (typeof window !== "undefined") {
+      console.warn("Supabase client is not available in TopicsProvider.")
+    }
+    return null
+  }
+
   const [topics, setTopics] = useState<Topic[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -80,8 +88,16 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, supabase])
 
+  if (loading) {
+    return (
+      <div className="text-sm text-zinc-400 p-4">
+        Loading topics...
+      </div>
+    )
+  }
+
   const createTopic = async (title: string, description: string) => {
-    if (!user) throw new Error("No user logged in")
+    if (!user || !supabase) throw new Error("No user logged in")
 
     try {
       const { error } = await supabase.from("topics").insert({
@@ -98,7 +114,7 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
   }
 
   const deleteTopic = async (id: string) => {
-    if (!user) throw new Error("No user logged in")
+    if (!user || !supabase) throw new Error("No user logged in")
 
     try {
       const { error } = await supabase

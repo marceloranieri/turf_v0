@@ -25,6 +25,14 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined)
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { user, supabase } = useAuth()
+
+  if (!supabase) {
+    if (typeof window !== "undefined") {
+      console.warn("Supabase client is not available in ProfileProvider.")
+    }
+    return null
+  }
+
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -56,8 +64,16 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     loadProfile()
   }, [user, supabase])
 
+  if (loading) {
+    return (
+      <div className="text-sm text-zinc-400 p-4">
+        Loading your profile...
+      </div>
+    )
+  }
+
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) throw new Error("No user logged in")
+    if (!user || !supabase) throw new Error("No user logged in")
 
     try {
       const { error } = await supabase

@@ -22,23 +22,59 @@ export function AuthProvider({
   children: React.ReactNode
   supabase: SupabaseClient<Database>
 }) {
+  if (!supabase) {
+    if (typeof window !== "undefined") {
+      console.warn("Supabase client is not available in AuthProvider.")
+    }
+    return null
+  }
+
   const [user, setUser] = useState<User | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-    })
+    let mounted = true
 
-    // Listen for changes on auth state (logged in, signed out, etc.)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
+    async function initialize() {
+      try {
+        // Check active sessions and sets the user
+        const { data: { session } } = await supabase.auth.getSession()
+        if (mounted) {
+          setUser(session?.user ?? null)
+          setIsInitialized(true)
+        }
 
-    return () => subscription.unsubscribe()
+        // Listen for changes on auth state (logged in, signed out, etc.)
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (mounted) {
+            setUser(session?.user ?? null)
+          }
+        })
+
+        return () => {
+          mounted = false
+          subscription.unsubscribe()
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        if (mounted) {
+          setIsInitialized(true)
+        }
+      }
+    }
+
+    initialize()
   }, [supabase])
+
+  if (!isInitialized) {
+    return (
+      <div className="text-sm text-zinc-400 p-4">
+        Signing you into Turf...
+      </div>
+    )
+  }
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

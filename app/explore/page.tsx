@@ -1,5 +1,3 @@
-"use client"
-
 import { LeftSidebar } from "@/components/left-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +11,6 @@ export default async function ExplorePage() {
 
   const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd")
 
-  // Fetch yesterday's top-voted messages (join with topics)
   const { data: yesterdaysTopics } = await supabase
     .rpc("get_yesterdays_hottest_messages", { date_input: yesterday })
 

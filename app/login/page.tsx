@@ -20,7 +20,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -29,7 +29,7 @@ export default function LoginPage() {
       if (error) throw error;
       toast({ title: 'Success', description: 'Signed in successfully' });
       router.push('/');
-    } catch (error) {
+    } catch (error: any) {
       toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
@@ -43,7 +43,7 @@ export default function LoginPage() {
         options: { redirectTo: `${window.location.origin}/auth/callback` }
       });
       if (error) throw error;
-    } catch (error) {
+    } catch (error: any) {
       toast({ title: 'Google sign-in failed', description: error.message, variant: 'destructive' });
     }
   };
@@ -98,7 +98,9 @@ export default function LoginPage() {
               />
               Remember for 30 days
             </label>
-            <a href="/reset-password" className="text-yellow-400 hover:underline">Forgot password</a>
+            <a href="/reset-password" className="text-yellow-400 hover:underline">
+              Forgot password
+            </a>
           </div>
 
           <Button type="submit" className="w-full bg-yellow-400 text-black hover:bg-yellow-300" disabled={isLoading}>
@@ -110,7 +112,10 @@ export default function LoginPage() {
           </Button>
 
           <p className="text-center text-sm text-zinc-400">
-            Don't have an account? <a href="/register" className="text-yellow-400 hover:underline">Sign up</a>
+            Don't have an account?{' '}
+            <a href="/register" className="text-yellow-400 hover:underline">
+              Sign up
+            </a>
           </p>
         </form>
       </div>

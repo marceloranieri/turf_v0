@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center">
             <img src="/logo.svg" alt="Turf Logo" className="h-8 mx-auto mb-4" />
             <h1 className="text-3xl font-bold mb-2">Forgot Password?</h1>
-            <p className="text-zinc-400 text-sm">
+            <p className="text-zinc-400 text-sm mt-1.1">
               Enter the email address associated with your Turf account.
             </p>
           </div>

@@ -80,8 +80,8 @@ export default function RegisterPage() {
           <div className="text-center">
             <img src="/logo.svg" alt="Turf Logo" className="h-8 mx-auto mb-4" />
             <h1 className="text-3xl font-bold">Create an account</h1>
-            <p className="text-zinc-400 text-sm mt-1">
-              Rediscover social with Turf: Fresh daily topics to spark your wit and meet your kind of people.
+            <p className="text-zinc-400 text-sm mt-1.1">
+              Fresh daily topics to spark your wit, with your kind of people.
             </p>
           </div>
 

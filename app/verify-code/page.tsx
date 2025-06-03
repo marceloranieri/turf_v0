@@ -57,7 +57,7 @@ export default function VerifyCodePage() {
           <img src="/logo.svg" alt="Turf Logo" className="h-8 mx-auto mb-4" />
 
           <h1 className="text-3xl font-bold">Enter the code</h1>
-          <p className="text-zinc-400 text-sm">Unlock Your Account: Enter the Code below.</p>
+          <p className="text-zinc-400 text-sm mt-1.1">Unlock Your Account: Enter the Code below.</p>
 
           <div className="flex justify-center gap-2 mt-4" role="group" aria-label="Verification code">
             {code.map((char, index) => (

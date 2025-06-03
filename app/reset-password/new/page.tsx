@@ -99,11 +99,17 @@ export default function ResetPasswordPage() {
         </form>
       </div>
 
-      <div
-        className="hidden md:flex flex-1 bg-cover bg-center items-center justify-center p-8"
-        style={{ backgroundImage: 'url("/turf-signup-visual.jpg")' }}
-      >
-        <div className="bg-zinc-900/80 rounded-xl p-6 text-left shadow-lg max-w-sm">
+      <div className="hidden md:flex flex-1 items-center justify-center p-8 relative">
+        <video
+          className="absolute inset-0 w-full h-full object-cover rounded-xl"
+          src="/turf-auth-loop.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+        />
+        <div className="relative z-10 bg-zinc-900/80 rounded-xl p-6 text-left shadow-lg max-w-sm">
           <p className="text-sm text-zinc-300 mb-2">Join Your Crowd</p>
           <p className="text-lg font-semibold">
             Where shared interests spark fresh chats — and new friends, daily!

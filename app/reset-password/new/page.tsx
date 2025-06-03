@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
         <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6 text-center">
           <img src="/logo.svg" alt="Turf Logo" className="h-8 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold">Forgot Password?</h1>
+          <h1 className="text-2xl font-bold mb-5">Forgot Password?</h1>
           <p className="text-zinc-400 text-sm mt-1.1">Reset your password</p>
 
           <div className="relative">

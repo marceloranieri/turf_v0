@@ -14,7 +14,7 @@ export default function CheckEmailPage() {
         <div className="w-full max-w-md space-y-6 text-center">
           <img src="/logo.svg" alt="Turf Logo" className="h-8 mx-auto mb-4" />
 
-          <h1 className="text-3xl font-bold">Check your email</h1>
+          <h1 className="text-2xl font-bold mb-5">Check your email</h1>
           <p className="text-zinc-400 text-sm mt-1.1">
             We sent a verification link to your email (check spam if needed).
           </p>

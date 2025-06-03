@@ -79,7 +79,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6">
           <div className="text-center">
             <img src="/logo.svg" alt="Turf Logo" className="h-8 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold">Create an account</h1>
+            <h1 className="text-2xl font-bold mb-5">Create an account</h1>
             <p className="text-zinc-400 text-sm mt-1.1">
               Fresh daily topics to spark your wit, with your kind of people.
             </p>

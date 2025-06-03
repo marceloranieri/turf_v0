@@ -56,7 +56,7 @@ export default function VerifyCodePage() {
         <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6 text-center">
           <img src="/logo.svg" alt="Turf Logo" className="h-8 mx-auto mb-4" />
 
-          <h1 className="text-3xl font-bold">Enter the code</h1>
+          <h1 className="text-2xl font-bold mb-5">Enter the code</h1>
           <p className="text-zinc-400 text-sm mt-1.1">Unlock Your Account: Enter the Code below.</p>
 
           <div className="flex justify-center gap-2 mt-4" role="group" aria-label="Verification code">

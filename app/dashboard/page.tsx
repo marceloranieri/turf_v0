@@ -66,8 +66,21 @@ export default function DashboardPage() {
             .limit(10)
         ])
 
+        // Debug logging
+        console.log("Supabase Client:", supabase)
+        console.log("Topics Data:", topicsData)
+        console.log("Topics Error:", topicsError)
+        console.log("Radar Data:", radarData)
+        console.log("Radar Error:", radarError)
+
         if (topicsError || radarError) {
-          setError("Failed to load dashboard data")
+          const errorDetails = {
+            topicsError: topicsError?.message || null,
+            radarError: radarError?.message || null,
+            timestamp: new Date().toISOString()
+          }
+          console.error("Dashboard Data Error:", errorDetails)
+          setError(JSON.stringify(errorDetails, null, 2))
         } else {
           setTopics(topicsData || [])
           setRadarFeed(radarData || [])
@@ -75,6 +88,7 @@ export default function DashboardPage() {
 
         setNextRefreshAt(new Date(Date.now() + REFRESH_INTERVAL))
       } catch (err) {
+        console.error("Unexpected Error:", err)
         setError(err instanceof Error ? err.message : 'Failed to load topics')
       } finally {
         setLoading(false)
@@ -111,7 +125,12 @@ export default function DashboardPage() {
   if (error) {
     return (
       <DashboardShell>
-        <p className="text-red-500 text-center">{error}</p>
+        <div className="space-y-4">
+          <p className="text-red-500 text-center">Failed to load dashboard data</p>
+          <div className="bg-red-950/50 p-4 rounded-lg">
+            <p className="text-xs font-mono text-red-400 whitespace-pre-wrap">{error}</p>
+          </div>
+        </div>
       </DashboardShell>
     )
   }

@@ -81,11 +81,16 @@ export default function ForgotPasswordPage() {
           poster="/turf-signup-visual.jpg"
           onError={(e) => console.error('Video loading error:', e)}
         />
-        <div className="relative z-10 bg-zinc-900/80 rounded-xl p-6 text-left shadow-lg max-w-sm">
-          <p className="text-sm text-zinc-300 mb-2">Join Your Crowd</p>
-          <p className="text-lg font-semibold">
-            Where shared interests spark fresh chats — and new friends, daily!
-          </p>
+        <div className="absolute top-10 right-10 bg-zinc-900/80 text-white rounded-2xl px-6 py-4 flex items-center justify-between w-[min(90vw,600px)] shadow-xl backdrop-blur-sm z-10 gap-4">
+          <div>
+            <p className="text-base font-semibold leading-snug">Wake your brain: rediscover social with Turf.</p>
+            <p className="text-sm text-zinc-300 mt-1">Join daily debates on favorite topics. Pick a side. Meet your kind.</p>
+          </div>
+          <img
+            src="/Avatars_Turf.webp"
+            alt="People avatars"
+            className="w-24 h-8 object-contain"
+          />
         </div>
       </div>
     </div>

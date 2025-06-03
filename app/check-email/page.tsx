@@ -48,6 +48,8 @@ export default function CheckEmailPage() {
           muted
           playsInline
           preload="auto"
+          poster="/turf-signup-visual.jpg"
+          onError={(e) => console.error('Video loading error:', e)}
         />
         <div className="relative z-10 bg-zinc-900/80 rounded-xl p-6 text-left shadow-lg max-w-sm">
           <p className="text-sm text-zinc-300 mb-2">Join Your Crowd</p>

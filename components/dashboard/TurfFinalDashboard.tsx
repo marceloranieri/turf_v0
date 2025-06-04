@@ -6,6 +6,8 @@ import { formatDistanceToNow } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { TopMessageCard } from "./top-message-card";
 
 interface Circle {
   id: string;
@@ -85,53 +87,11 @@ export function TurfFinalDashboard({
               </div>
 
               <div className="space-y-3">
-                {messagesByCircle[circle.id]?.map((message) => (
-                  <div key={message.id} className="space-y-2">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={`https://avatar.vercel.sh/${message.user_id}`} />
-                        <AvatarFallback>
-                          {message.user_id.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">
-                            User {message.user_id.slice(0, 6)}
-                          </p>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                          </span>
-                        </div>
-                        
-                        <p className="text-sm">{message.content}</p>
-                        
-                        {message.media_url && (
-                          <div className="mt-2">
-                            {message.media_type?.startsWith('image/') ? (
-                              <img
-                                src={message.media_url}
-                                alt="Message media"
-                                className="rounded-lg max-h-48 object-cover"
-                              />
-                            ) : message.media_type?.startsWith('video/') ? (
-                              <video
-                                src={message.media_url}
-                                controls
-                                className="rounded-lg max-h-48"
-                              />
-                            ) : null}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>↑ {message.upvotes}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <AnimatePresence initial={false}>
+                  {messagesByCircle[circle.id]?.map((message) => (
+                    <TopMessageCard key={message.id} message={message} />
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
           </Card>

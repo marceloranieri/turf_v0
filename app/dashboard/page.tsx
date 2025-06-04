@@ -15,25 +15,42 @@ export default function DashboardPage() {
   const [selectedTab, setSelectedTab] = useState("feed") // feed | my | all
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Resilient session fetch logic
-  const waitForSession = async (retries = 3, delay = 300) => {
+  // Auth fallback using both getSession + event listener
+  async function resolveSession(retries = 5, delay = 400): Promise<string | null> {
+    let userId = null
     for (let i = 0; i < retries; i++) {
-      const { data: session } = await supabase.auth.getSession()
-      const user = session?.user
-      if (user?.id) return user
-      await new Promise(resolve => setTimeout(resolve, delay))
+      const { data } = await supabase.auth.getSession()
+      userId = data?.session?.user?.id || null
+      if (userId) break
+      await new Promise(r => setTimeout(r, delay))
     }
-    return null
+
+    // If still null, hook into auth changes
+    if (!userId) {
+      return new Promise(resolve => {
+        const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (session?.user?.id) {
+            resolve(session.user.id)
+            listener?.subscription?.unsubscribe()
+          }
+        })
+
+        // timeout fallback
+        setTimeout(() => resolve(null), 3000)
+      })
+    }
+
+    return userId
   }
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const user = await waitForSession(5, 350)
-        if (!user) throw new Error("User not authenticated")
+        const userId = await resolveSession()
+        if (!userId) throw new Error("User not authenticated")
 
         const [{ data: joined }, { data: dailyTopics }] = await Promise.all([
-          supabase.from("circle_members").select("circle_id").eq("user_id", user.id),
+          supabase.from("circle_members").select("circle_id").eq("user_id", userId),
           supabase
             .from("daily_topics")
             .select("id, topic_id, created_at, topics (title, question, description)")

@@ -18,16 +18,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const user = await supabase.auth.getUser()
-        const userId = user?.data?.user?.id
+        const { data: session, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) throw new Error(sessionError.message)
+        const userId = session?.user?.id
         if (!userId) throw new Error("User not authenticated")
 
         const [{ data: joined }, { data: dailyTopics }] = await Promise.all([
-          supabase
-            .from("circle_members")
-            .select("circle_id")
-            .eq("user_id", userId),
-
+          supabase.from("circle_members").select("circle_id").eq("user_id", userId),
           supabase
             .from("daily_topics")
             .select("id, topic_id, created_at, topics (title, question, description)")
@@ -53,7 +50,7 @@ export default function DashboardPage() {
         setMessagesByCircle(messagesMap)
         setLoading(false)
       } catch (err) {
-        console.error("Dashboard load error:", err)
+        console.error("Dashboard error:", err)
         setError(err.message || "Unexpected error")
         setLoading(false)
       }

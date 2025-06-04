@@ -14,11 +14,7 @@ import { getCategory } from "@/lib/category-colors"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
 import Timer from '@/components/Timer'
-import dynamic from 'next/dynamic'
 import ErrorBoundary from '@/components/ErrorBoundary'
-
-// Dynamically import RightSidebar with SSR disabled
-const RightSidebar = dynamic(() => import('@/components/right-sidebar'), { ssr: false })
 
 type Topic = {
   id: string
@@ -336,11 +332,6 @@ export default function ExplorePage() {
               )}
             </ErrorBoundary>
           </div>
-
-          {/* Right Sidebar */}
-          <ErrorBoundary>
-            <RightSidebar nextRefreshAt={nextRefreshAt} />
-          </ErrorBoundary>
         </div>
       </div>
     </div>

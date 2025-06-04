@@ -6,12 +6,8 @@ import { Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
 import Timer from '@/components/Timer'
-import dynamic from 'next/dynamic'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { useParams } from 'next/navigation'
-
-// Dynamically import RightSidebar with SSR disabled
-const RightSidebar = dynamic(() => import('@/components/right-sidebar'), { ssr: false })
 
 const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
 
@@ -105,11 +101,6 @@ export default function ChatroomPage() {
               )}
             </ErrorBoundary>
           </div>
-
-          {/* Right Sidebar */}
-          <ErrorBoundary>
-            <RightSidebar nextRefreshAt={nextRefreshAt} />
-          </ErrorBoundary>
         </div>
       </div>
     </div>

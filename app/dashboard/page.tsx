@@ -1,148 +1,86 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { LeftSidebar } from "@/components/left-sidebar"
-import TopicGrid from '@/components/TopicGrid'
-import CategoryTabs from '@/components/CategoryTabs'
-import { Loader2 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
-import Timer from '@/components/Timer'
-import dynamic from 'next/dynamic'
-import ErrorBoundary from '@/components/ErrorBoundary'
-import { startOfToday, endOfToday } from 'date-fns'
-import { DashboardShell } from "@/components/layout/dashboard-shell"
-import { CirclesList } from "@/components/dashboard/circles-list"
-import { RadarPanel } from "@/components/dashboard/radar-panel"
-
-// Dynamically import RightSidebar with SSR disabled
-const RightSidebar = dynamic(() => import('@/components/right-sidebar'), { ssr: false })
-
-interface Topic {
-  id: string
-  title: string
-  category: string
-  created_at: string
-  description?: string
-  active_users?: number
-  message_count?: number
-}
-
-const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
+import { Loader2 } from 'lucide-react'
+import { TurfFinalDashboard } from '@/components/dashboard/TurfFinalDashboard'
 
 export default function DashboardPage() {
   const supabase = useSupabase()
-  const [topics, setTopics] = useState<Topic[]>([])
-  const [radarFeed, setRadarFeed] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState('All')
-  const [nextRefreshAt, setNextRefreshAt] = useState(new Date(Date.now() + REFRESH_INTERVAL))
-  const [mounted, setMounted] = useState(false)
+  const [data, setData] = useState({
+    circles: [],
+    messages: {},
+    loading: true,
+    error: null,
+  })
 
-  // Set mounted state
   useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Load today's circles from daily_topics (joined with topics)
-  useEffect(() => {
-    if (!mounted || !supabase) return
-
-    async function fetchData() {
-      setLoading(true)
-      setError(null)
+    const fetchDashboardData = async () => {
       try {
-        const [{ data: topicsData, error: topicsError }, { data: radarData, error: radarError }] = await Promise.all([
-          supabase
-            .from("daily_topics")
-            .select("id, title, description, category")
-            .gte("created_at", startOfToday().toISOString())
-            .lte("created_at", endOfToday().toISOString()),
-          supabase
-            .from("radar_feed")
-            .select("*")
-            .order("timestamp", { ascending: false })
-            .limit(10)
-        ])
+        const user = await supabase.auth.getUser()
+        const userId = user?.data?.user?.id
 
-        // Debug logging
-        console.log("Supabase Client:", supabase)
-        console.log("Topics Data:", topicsData)
-        console.log("Topics Error:", topicsError)
-        console.log("Radar Data:", radarData)
-        console.log("Radar Error:", radarError)
-
-        if (topicsError || radarError) {
-          const errorDetails = {
-            topicsError: topicsError?.message || null,
-            radarError: radarError?.message || null,
-            timestamp: new Date().toISOString()
-          }
-          console.error("Dashboard Data Error:", errorDetails)
-          setError(JSON.stringify(errorDetails, null, 2))
-        } else {
-          setTopics(topicsData || [])
-          setRadarFeed(radarData || [])
+        if (!userId) {
+          setData({ ...data, loading: false, error: 'User not logged in' })
+          return
         }
 
-        setNextRefreshAt(new Date(Date.now() + REFRESH_INTERVAL))
+        const { data: joinedCircles, error: joinedError } = await supabase
+          .from("circle_members")
+          .select("circle_id, circles:circle_id(id, topic_id, created_at, topics(title, question, description))")
+          .eq("user_id", userId)
+
+        if (joinedError) throw new Error(joinedError.message)
+
+        const messageMap = {}
+
+        for (const c of joinedCircles || []) {
+          const { data: messages, error: msgError } = await supabase
+            .from("messages")
+            .select("id, user_id, content, created_at, upvotes, media_url, media_type")
+            .eq("circle_id", c.circle_id)
+            .order("upvotes", { ascending: false })
+            .limit(10)
+
+          if (!msgError) {
+            messageMap[c.circle_id] = messages || []
+          }
+        }
+
+        setData({
+          circles: joinedCircles,
+          messages: messageMap,
+          loading: false,
+          error: null,
+        })
       } catch (err) {
-        console.error("Unexpected Error:", err)
-        setError(err instanceof Error ? err.message : 'Failed to load topics')
-      } finally {
-        setLoading(false)
+        setData({ ...data, loading: false, error: err.message })
       }
     }
 
-    fetchData()
-    const interval = setInterval(() => {
-      fetchData()
-    }, REFRESH_INTERVAL)
-    return () => clearInterval(interval)
-  }, [supabase, mounted])
+    fetchDashboardData()
+  }, [])
 
-  // Get unique categories from active topics
-  const activeCategories = ['All', ...Array.from(new Set(topics.map(t => t.category)))]
-
-  const filteredTopics = selectedCategory === 'All'
-    ? topics
-    : topics.filter(topic => topic.category === selectedCategory)
-
-  // Return null during SSR to prevent hydration mismatches
-  if (!mounted) return null
-
-  if (loading) {
+  if (data.loading) {
     return (
-      <DashboardShell>
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="animate-spin" />
-        </div>
-      </DashboardShell>
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
-  if (error) {
+  if (data.error) {
     return (
-      <DashboardShell>
-        <div className="space-y-4">
-          <p className="text-red-500 text-center">Failed to load dashboard data</p>
-          <div className="bg-red-950/50 p-4 rounded-lg">
-            <p className="text-xs font-mono text-red-400 whitespace-pre-wrap">{error}</p>
-          </div>
-        </div>
-      </DashboardShell>
+      <div className="text-red-500 text-center p-4">
+        <p>Error loading dashboard: {data.error}</p>
+      </div>
     )
   }
 
   return (
-    <DashboardShell>
-      <div className="flex flex-col lg:flex-row gap-6 w-full">
-        <div className="flex-1 flex flex-col gap-6">
-          <CirclesList topics={topics} />
-        </div>
-        <RadarPanel events={radarFeed} />
-      </div>
-    </DashboardShell>
+    <TurfFinalDashboard
+      circles={data.circles}
+      messagesByCircle={data.messages}
+    />
   )
 }

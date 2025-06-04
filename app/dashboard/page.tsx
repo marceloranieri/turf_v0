@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
 import { Loader2 } from 'lucide-react'
-import { TurfFinalDashboard } from '@/components/dashboard/TurfFinalDashboard'
 import { AuthenticatedDashboard } from '@/components/dashboard/AuthenticatedDashboard'
 
 export default function DashboardPage() {
@@ -12,21 +11,28 @@ export default function DashboardPage() {
   const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    const init = async () => {
+      // 👇 Always wait for onAuthStateChange at least once before reading session
+      const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user?.id) {
+          setUserId(session.user.id)
+        } else {
+          setUserId(null)
+        }
+        setAuthChecked(true)
+      })
+
+      // 👇 Immediately get session (optional fallback in case already available)
+      const { data } = await supabase.auth.getSession()
       if (data?.session?.user?.id) {
         setUserId(data.session.user.id)
+        setAuthChecked(true)
       }
-      setAuthChecked(true)
-    })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user?.id) {
-        setUserId(session.user.id)
-      }
-      setAuthChecked(true)
-    })
+      return () => authListener?.subscription.unsubscribe()
+    }
 
-    return () => listener?.subscription.unsubscribe()
+    init()
   }, [supabase])
 
   if (!authChecked) {

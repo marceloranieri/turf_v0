@@ -3,18 +3,16 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Circle {
-  circle_id: string;
-  circles: {
-    id: string;
-    topic_id: string;
-    created_at: string;
-    topics: {
-      title: string;
-      question: string;
-      description: string;
-    };
+  id: string;
+  topic_id: string;
+  created_at: string;
+  topics: {
+    title: string;
+    question: string;
+    description: string;
   };
 }
 
@@ -29,28 +27,48 @@ interface Message {
 }
 
 interface TurfFinalDashboardProps {
-  circles: Circle[];
+  joinedCircles: Circle[];
+  unjoinedCircles: Circle[];
   messagesByCircle: Record<string, Message[]>;
+  selectedTab: string;
+  onTabChange: (tab: string) => void;
+  visibleCircles: Circle[];
 }
 
-export function TurfFinalDashboard({ circles, messagesByCircle }: TurfFinalDashboardProps) {
+export function TurfFinalDashboard({
+  joinedCircles,
+  unjoinedCircles,
+  messagesByCircle,
+  selectedTab,
+  onTabChange,
+  visibleCircles,
+}: TurfFinalDashboardProps) {
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-bold mb-6">Your Circles</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Your Circles</h1>
+        <Tabs value={selectedTab} onValueChange={onTabChange} className="w-[400px]">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="feed">Feed</TabsTrigger>
+            <TabsTrigger value="my">My Circles</TabsTrigger>
+            <TabsTrigger value="all">All Circles</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {circles.map((circle) => (
-          <Card key={circle.circle_id} className="p-4">
+        {visibleCircles.map((circle) => (
+          <Card key={circle.id} className="p-4">
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-semibold">{circle.circles.topics.title}</h2>
+                <h2 className="text-xl font-semibold">{circle.topics.title}</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {circle.circles.topics.description}
+                  {circle.topics.description}
                 </p>
               </div>
 
               <div className="space-y-3">
-                {messagesByCircle[circle.circle_id]?.map((message) => (
+                {messagesByCircle[circle.id]?.map((message) => (
                   <div key={message.id} className="space-y-2">
                     <div className="flex items-start gap-3">
                       <Avatar className="h-8 w-8">

@@ -7,80 +7,96 @@ import { TurfFinalDashboard } from '@/components/dashboard/TurfFinalDashboard'
 
 export default function DashboardPage() {
   const supabase = useSupabase()
-  const [data, setData] = useState({
-    circles: [],
-    messages: {},
-    loading: true,
-    error: null,
-  })
+  const [joinedCircles, setJoinedCircles] = useState([])
+  const [allCircles, setAllCircles] = useState([])
+  const [messagesByCircle, setMessagesByCircle] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [selectedTab, setSelectedTab] = useState("feed") // feed | my | all
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchData = async () => {
       try {
         const user = await supabase.auth.getUser()
         const userId = user?.data?.user?.id
+        if (!userId) throw new Error("User not authenticated")
 
-        if (!userId) {
-          setData({ ...data, loading: false, error: 'User not logged in' })
-          return
-        }
+        const [{ data: joined }, { data: dailyTopics }] = await Promise.all([
+          supabase
+            .from("circle_members")
+            .select("circle_id")
+            .eq("user_id", userId),
 
-        const { data: joinedCircles, error: joinedError } = await supabase
-          .from("circle_members")
-          .select("circle_id, circles:circle_id(id, topic_id, created_at, topics(title, question, description))")
-          .eq("user_id", userId)
+          supabase
+            .from("daily_topics")
+            .select("id, topic_id, created_at, topics (title, question, description)")
+        ])
 
-        if (joinedError) throw new Error(joinedError.message)
+        const joinedIds = new Set((joined || []).map(j => j.circle_id))
+        const joinedCircles = (dailyTopics || []).filter(c => joinedIds.has(c.id))
+        const unjoinedCircles = (dailyTopics || []).filter(c => !joinedIds.has(c.id))
 
-        const messageMap = {}
-
-        for (const c of joinedCircles || []) {
-          const { data: messages, error: msgError } = await supabase
+        const messagesMap = {}
+        for (const c of joinedCircles) {
+          const { data: messages } = await supabase
             .from("messages")
             .select("id, user_id, content, created_at, upvotes, media_url, media_type")
-            .eq("circle_id", c.circle_id)
+            .eq("circle_id", c.id)
             .order("upvotes", { ascending: false })
             .limit(10)
-
-          if (!msgError) {
-            messageMap[c.circle_id] = messages || []
-          }
+          messagesMap[c.id] = messages || []
         }
 
-        setData({
-          circles: joinedCircles,
-          messages: messageMap,
-          loading: false,
-          error: null,
-        })
+        setJoinedCircles(joinedCircles)
+        setAllCircles(unjoinedCircles)
+        setMessagesByCircle(messagesMap)
+        setLoading(false)
       } catch (err) {
-        setData({ ...data, loading: false, error: err.message })
+        console.error("Dashboard load error:", err)
+        setError(err.message || "Unexpected error")
+        setLoading(false)
       }
     }
 
-    fetchDashboardData()
+    fetchData()
   }, [])
 
-  if (data.loading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="animate-spin text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center h-screen gap-4 text-muted-foreground">
+        <Loader2 className="animate-spin w-6 h-6" />
+        <span>Loading dashboard...</span>
       </div>
     )
   }
 
-  if (data.error) {
+  if (error) {
     return (
       <div className="text-red-500 text-center p-4">
-        <p>Error loading dashboard: {data.error}</p>
+        <p>Error loading dashboard:</p>
+        <pre className="text-xs bg-neutral-900 p-2 rounded mt-2">{error}</pre>
       </div>
     )
+  }
+
+  let visibleCircles = []
+  if (selectedTab === "my") {
+    visibleCircles = joinedCircles
+  } else if (selectedTab === "all") {
+    visibleCircles = [...joinedCircles, ...allCircles]
+  } else {
+    visibleCircles =
+      joinedCircles.length > 0 ? [...joinedCircles, ...allCircles] : allCircles
   }
 
   return (
     <TurfFinalDashboard
-      circles={data.circles}
-      messagesByCircle={data.messages}
+      joinedCircles={joinedCircles}
+      unjoinedCircles={allCircles}
+      messagesByCircle={messagesByCircle}
+      selectedTab={selectedTab}
+      onTabChange={setSelectedTab}
+      visibleCircles={visibleCircles}
     />
   )
 }

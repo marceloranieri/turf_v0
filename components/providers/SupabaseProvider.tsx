@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, createContext, useContext } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { SessionContextProvider } from '@supabase/auth-helpers-react'
 import type { Database } from '@/types/supabase'
+
+const SupabaseContext = createContext<any>(null)
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState(() =>
@@ -22,8 +24,15 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <SessionContextProvider supabaseClient={supabase as any}>
-      {children}
-    </SessionContextProvider>
+    <SupabaseContext.Provider value={supabase}>
+      <SessionContextProvider supabaseClient={supabase as any}>
+        {children}
+      </SessionContextProvider>
+    </SupabaseContext.Provider>
   )
+}
+
+// ✅ Fixes "not exported" build error
+export function useSupabase() {
+  return useContext(SupabaseContext)
 } 

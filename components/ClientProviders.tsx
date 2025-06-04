@@ -7,29 +7,8 @@ import { TopicsProvider } from "@/context/topics-context"
 import { SupabaseProvider } from "@/components/providers/SupabaseProvider"
 import { useSupabase } from "@/components/providers/SupabaseProvider"
 
-export default function ClientProviders({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <SupabaseProvider>
-        <AuthProviderWithSupabase>
-          <ProfileProvider>
-            <TopicsProvider>
-              {children}
-            </TopicsProvider>
-          </ProfileProvider>
-        </AuthProviderWithSupabase>
-      </SupabaseProvider>
-    </ThemeProvider>
-  )
+export function ClientProviders({ children }: { children: React.ReactNode }) {
+  return <SupabaseProvider>{children}</SupabaseProvider>;
 }
 
 function AuthProviderWithSupabase({ children }: { children: React.ReactNode }) {

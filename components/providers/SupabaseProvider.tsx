@@ -1,36 +1,29 @@
 'use client'
 
+import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { useState, createContext, useContext, useEffect } from 'react'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { SessionContextProvider } from '@supabase/auth-helpers-react'
 import type { Database } from '@/types/supabase'
 
-const SupabaseContext = createContext<SupabaseClient<Database> | null>(null)
-
-export const SupabaseProvider = ({ children }: { children: React.ReactNode }) => {
-  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
-
-  useEffect(() => {
-    const client = createBrowserClient<Database>(
+export function SupabaseProvider({ children }: { children: React.ReactNode }) {
+  const [supabase] = useState(() =>
+    createBrowserClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookieOptions: {
+          name: 'sb',
+          path: '/',
+          sameSite: 'lax',
+          secure: true,
+        },
+      }
     )
-    setSupabase(client)
-    setIsInitialized(true)
-  }, [])
-
-  if (!isInitialized) {
-    return null // or a loading spinner
-  }
+  )
 
   return (
-    <SupabaseContext.Provider value={supabase}>
+    <SessionContextProvider supabaseClient={supabase as any}>
       {children}
-    </SupabaseContext.Provider>
+    </SessionContextProvider>
   )
-}
-
-export const useSupabase = () => {
-  return useContext(SupabaseContext)
 } 

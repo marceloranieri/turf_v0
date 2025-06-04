@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 interface Circle {
   id: string;
@@ -33,6 +35,8 @@ interface TurfFinalDashboardProps {
   selectedTab: string;
   onTabChange: (tab: string) => void;
   visibleCircles: Circle[];
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
 }
 
 export function TurfFinalDashboard({
@@ -42,18 +46,31 @@ export function TurfFinalDashboard({
   selectedTab,
   onTabChange,
   visibleCircles,
+  searchTerm,
+  onSearchChange,
 }: TurfFinalDashboardProps) {
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Your Circles</h1>
-        <Tabs value={selectedTab} onValueChange={onTabChange} className="w-[400px]">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="feed">Feed</TabsTrigger>
-            <TabsTrigger value="my">My Circles</TabsTrigger>
-            <TabsTrigger value="all">All Circles</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative w-full sm:w-[300px]">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search circles..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <Tabs value={selectedTab} onValueChange={onTabChange} className="w-full sm:w-[400px]">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="feed">Feed</TabsTrigger>
+              <TabsTrigger value="my">My Circles</TabsTrigger>
+              <TabsTrigger value="all">All Circles</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

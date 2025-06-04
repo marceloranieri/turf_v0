@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedTab, setSelectedTab] = useState("feed") // feed | my | all
+  const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +60,9 @@ export default function DashboardPage() {
     }
 
     fetchData()
-  }, [])
+    const interval = setInterval(fetchData, 30000)
+    return () => clearInterval(interval)
+  }, [supabase])
 
   if (loading) {
     return (
@@ -89,6 +92,11 @@ export default function DashboardPage() {
       joinedCircles.length > 0 ? [...joinedCircles, ...allCircles] : allCircles
   }
 
+  const filteredCircles = visibleCircles.filter(c => {
+    const title = c.topics?.title?.toLowerCase?.() || ""
+    return title.includes(searchTerm.toLowerCase())
+  })
+
   return (
     <TurfFinalDashboard
       joinedCircles={joinedCircles}
@@ -96,7 +104,9 @@ export default function DashboardPage() {
       messagesByCircle={messagesByCircle}
       selectedTab={selectedTab}
       onTabChange={setSelectedTab}
-      visibleCircles={visibleCircles}
+      visibleCircles={filteredCircles}
+      searchTerm={searchTerm}
+      onSearchChange={setSearchTerm}
     />
   )
 }

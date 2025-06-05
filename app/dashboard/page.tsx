@@ -1,47 +1,60 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useSupabase } from '@/components/providers/SupabaseProvider'
-import { AuthenticatedDashboard } from '@/components/dashboard/AuthenticatedDashboard'
-import { Loader2 } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
+import FeedCircleColumn from '@/components/dashboard/FeedCircleColumn'
+import SuggestedCircles from '@/components/dashboard/SuggestedCircles'
+import { getSession } from '@/lib/auth'
+
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function DashboardPage() {
-  const supabase = useSupabase()
-  const router = useRouter()
-  const [userId, setUserId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [feedData, setFeedData] = useState([])
 
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data, error } = await supabase.auth.getUser()
-        if (error || !data?.user) {
-          router.push('/login')
-        } else {
-          setUserId(data.user.id)
+  const fetchFeed = async () => {
+    const { data: userCircles } = await supabase
+      .from('circle_members')
+      .select('circle_id, circles ( topic_id, topics ( title, description ) )')
+
+    if (!userCircles) return
+
+    const circlesWithMessages = await Promise.all(
+      userCircles.map(async (circle) => {
+        const { data: messages } = await supabase
+          .from('messages')
+          .select('id, content, created_at, media_url, user_id')
+          .eq('topic_id', circle.circles.topic_id)
+          .order('created_at', { ascending: false })
+          .limit(10)
+
+        return {
+          ...circle.circles.topics,
+          circleId: circle.circle_id,
+          messages,
         }
-      } catch (err) {
-        console.error('Failed to fetch user:', err)
-        router.push('/login')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    getUser()
-  }, [supabase, router])
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4 text-muted-foreground">
-        <Loader2 className="animate-spin w-6 h-6" />
-        <span>Checking authentication...</span>
-      </div>
+      })
     )
+
+    setFeedData(circlesWithMessages)
   }
 
-  if (!userId) return null
+  useEffect(() => {
+    fetchFeed()
+    const interval = setInterval(fetchFeed, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
-  return <AuthenticatedDashboard userId={userId} />
+  return (
+    <div className="flex flex-col gap-4 px-6">
+      <div className="flex overflow-x-auto gap-6">
+        {feedData.map((circle) => (
+          <FeedCircleColumn key={circle.circleId} circle={circle} />
+        ))}
+      </div>
+      <SuggestedCircles />
+    </div>
+  )
 }

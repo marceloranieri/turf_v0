@@ -7,7 +7,6 @@ interface UseGiphyReturn {
   error: string | null
   searchGifs: (query: string, limit?: number) => Promise<void>
   getRandomGif: (tag: string) => Promise<void>
-  getTrendingGifs: (limit?: number) => Promise<void>
 }
 
 export function useGiphy(): UseGiphyReturn {
@@ -45,7 +44,6 @@ export function useGiphy(): UseGiphyReturn {
     }
   }
 
-  const getTrendingGifs = async (limit: number = 10) => {
     try {
       setLoading(true)
       setError(null)
@@ -66,6 +64,5 @@ export function useGiphy(): UseGiphyReturn {
     error,
     searchGifs,
     getRandomGif,
-    getTrendingGifs,
   }
 }

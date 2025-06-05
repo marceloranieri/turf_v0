@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Clock, MessageSquare, TrendingUp, Zap } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { supabase } from "@/lib/supabase"
 
@@ -117,8 +116,6 @@ export function TopicDiscovery() {
               For You
             </TabsTrigger>
             <TabsTrigger value="trending" className="flex-1 data-[state=active]:bg-violet-600">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Trending
             </TabsTrigger>
             <TabsTrigger value="new" className="flex-1 data-[state=active]:bg-violet-600">
               <Clock className="h-4 w-4 mr-2" />

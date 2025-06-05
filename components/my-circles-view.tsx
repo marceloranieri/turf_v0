@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Plus, Search, Users, MessageSquare, TrendingUp, Clock, MoreHorizontal, Settings } from "lucide-react"
 
 export function MyCirclesView() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -174,7 +173,6 @@ export function MyCirclesView() {
                             <span>{circle.members.toLocaleString()} members</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <TrendingUp className="h-3 w-3" />
                             <span>+12% this week</span>
                           </div>
                         </div>

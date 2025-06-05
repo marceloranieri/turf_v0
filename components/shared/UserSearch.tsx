@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { Search, UserPlus, Clock, TrendingUp } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
@@ -38,7 +37,6 @@ export default function UserSearch({
   const [searchTerm, setSearchTerm] = useState("")
   const [results, setResults] = useState<User[]>([])
   const [recentSearches, setRecentSearches] = useState<User[]>([])
-  const [trendingUsers, setTrendingUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const debouncedSearch = useDebounce(searchTerm, 300)
@@ -65,7 +63,6 @@ export default function UserSearch({
     })
   }, [])
 
-  const fetchTrendingUsers = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("users")
@@ -74,7 +71,6 @@ export default function UserSearch({
         .limit(5)
 
       if (error) throw error
-      setTrendingUsers(data || [])
     } catch (error) {
       console.error("Error fetching trending users:", error)
     }
@@ -108,9 +104,7 @@ export default function UserSearch({
     if (debouncedSearch) {
       searchUsers(debouncedSearch)
     } else {
-      fetchTrendingUsers()
     }
-  }, [debouncedSearch, searchUsers, fetchTrendingUsers])
 
   const handleResultClick = (user: User) => {
     onSelect?.(user)
@@ -159,8 +153,6 @@ export default function UserSearch({
               <div className="max-h-[300px] overflow-y-auto">
                 {!debouncedSearch && (
                   <div className="px-3 py-2 text-xs text-zinc-500 border-b border-zinc-800">
-                    <TrendingUp className="inline-block h-3 w-3 mr-1" />
-                    Trending Users
                   </div>
                 )}
                 {usersToShow.map((user) => (

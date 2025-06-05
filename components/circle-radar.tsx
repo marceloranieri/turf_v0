@@ -89,7 +89,6 @@ const demoNotifications = [
   },
 ]
 
-export function CircleRadar() {
   const [activities, setActivities] = useState(initialActivities)
   const [newNotificationCount, setNewNotificationCount] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)

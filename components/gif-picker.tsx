@@ -36,7 +36,6 @@ export function GifPicker({ isOpen, onClose, onSelectGif }: GifPickerProps) {
   const [activeCategory, setActiveCategory] = useState("trending")
 
   const categories = [
-    { id: "trending", label: "Trending" },
     { id: "reactions", label: "Reactions" },
     { id: "emotions", label: "Emotions" },
     { id: "animals", label: "Animals" },

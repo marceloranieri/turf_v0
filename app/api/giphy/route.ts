@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { searchGifs, getRandomGif, getTrendingGifs } from '@/app/lib/giphy'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -33,7 +32,6 @@ export async function GET(request: Request) {
         break
 
       case 'trending':
-        data = await getTrendingGifs(limit)
         break
 
       default:

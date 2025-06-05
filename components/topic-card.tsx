@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Clock, Users, MessageSquare, TrendingUp } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import type { Database } from "@/types/supabase"
@@ -118,7 +117,6 @@ export default function TopicCard({ topic }: TopicCardProps) {
         </div>
         {isNew && (
           <Badge variant="outline" className="ml-auto border-zinc-700 bg-zinc-800/50 text-zinc-400">
-            <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
             Active
           </Badge>
         )}

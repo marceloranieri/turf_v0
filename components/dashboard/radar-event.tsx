@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation"
 import { useSupabase } from "@/components/providers/SupabaseProvider"
 
-export function RadarEvent({ user, action, time, circleId }) {
   const supabase = useSupabase()
   const router = useRouter()
 

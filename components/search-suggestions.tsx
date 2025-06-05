@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Clock, TrendingUp, Search } from "lucide-react"
 
 interface SearchSuggestionsProps {
   searchQuery: string
@@ -91,8 +90,6 @@ export function SearchSuggestions({ searchQuery, onSelectSuggestion }: SearchSug
           ) : (
             <>
               <div className="flex items-center px-3 py-2 text-sm text-zinc-400">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                <span>Trending searches</span>
               </div>
               {suggestions.map((suggestion, index) => (
                 <button

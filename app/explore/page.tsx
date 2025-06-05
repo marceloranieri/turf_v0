@@ -1,10 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { DashboardLayout } from "@/components/dashboard-layout"
+import DashboardLayout from "@/components/dashboard-layout"
 import { Calendar, Users, Flame, Copy, UserPlus, ExternalLink, Check } from "lucide-react"
 import { useSupabase } from "@/components/providers/SupabaseProvider"
-import { TrendingCard } from "@/components/trending-card"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -73,7 +72,6 @@ export default function ExplorePage() {
   const { toast } = useToast()
   const [activeTopics, setActiveTopics] = useState<Topic[]>([])
   const [yesterdaysTopics, setYesterdaysTopics] = useState<ArchivedMessage[]>([])
-  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([])
   const [mostActiveTopic, setMostActiveTopic] = useState<Topic | null>(null)
   const [loading, setLoading] = useState({
     active: true,
@@ -133,7 +131,6 @@ export default function ExplorePage() {
           .limit(5)
 
         if (usersError) throw usersError
-        setSuggestedUsers(users || [])
         setLoading(prev => ({ ...prev, suggested: false }))
 
       } catch (err) {

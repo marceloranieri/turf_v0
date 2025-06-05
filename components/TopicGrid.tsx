@@ -93,7 +93,6 @@ export default function TopicGrid({ topics, loading = false }: TopicGridProps) {
             title={topic.title}
             category={topic.category}
             userCount={topic.active_users || 0}
-            isTrending={topic.active_users && topic.active_users > 10}
             onJoin={() => router.push(`/chat/${topic.id}`)}
             onCopyLink={() => navigator.clipboard.writeText(`${window.location.origin}/chat/${topic.id}`)}
           />

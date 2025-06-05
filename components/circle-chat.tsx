@@ -19,7 +19,6 @@ import {
   X,
   LayoutGrid,
 } from "lucide-react"
-import { CircleRadar } from "./circle-radar"
 import { ReportMessageModal } from "./report-message-modal"
 import { MessageWithMentions } from "./message-with-mentions"
 import { EnhancedMessageComposer } from "./enhanced-message-composer"
@@ -148,7 +147,6 @@ export function CircleChat() {
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
   const [currentTopic, setCurrentTopic] = useState(DAILY_TOPICS[0])
   const [timeRemaining, setTimeRemaining] = useState("")
-  const [showRadarOnMobile, setShowRadarOnMobile] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Calculate time remaining and handle expiration
@@ -289,8 +287,6 @@ export function CircleChat() {
     setIsHeaderCollapsed(!isHeaderCollapsed)
   }
 
-  const toggleRadarOnMobile = () => {
-    setShowRadarOnMobile(!showRadarOnMobile)
   }
 
   return (
@@ -351,12 +347,10 @@ export function CircleChat() {
                 )}
 
                 <div className="flex items-center">
-                  {/* Mobile Radar Toggle */}
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-zinc-400 hover:text-white hover:bg-zinc-800 md:hidden mr-1"
-                    onClick={toggleRadarOnMobile}
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </Button>
@@ -378,7 +372,6 @@ export function CircleChat() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Messages - Tighter spacing to match Discord */}
-          <div className={`flex-1 overflow-y-auto px-4 md:px-6 py-4 ${showRadarOnMobile ? "hidden sm:block" : ""}`}>
             <div className="max-w-[580px] mx-auto space-y-3">
               {messages.length > 0 ? (
                 messages.map((message) => (
@@ -413,17 +406,12 @@ export function CircleChat() {
             </div>
           </div>
 
-          {/* Mobile Radar Panel (conditionally shown) */}
           <div
-            className={`w-full sm:w-80 border-l border-zinc-700/50 bg-zinc-900/50 ${showRadarOnMobile ? "block" : "hidden"} sm:hidden`}
           >
             <div className="flex justify-between items-center p-2 border-b border-zinc-700/50">
-              <h3 className="text-zinc-200 font-medium">Radar</h3>
-              <Button variant="ghost" size="sm" onClick={toggleRadarOnMobile}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <CircleRadar />
           </div>
         </div>
 
@@ -442,25 +430,20 @@ export function CircleChat() {
         </div>
       </div>
 
-      {/* Right Sidebar - Radar Panel (desktop only) */}
       <div className="w-80 border-l border-zinc-700/50 bg-zinc-900/50 hidden md:block">
         <Tabs defaultValue="radar" className="h-full">
           <TabsList className="w-full bg-zinc-800/50 rounded-none border-b border-zinc-700/50 h-12">
             <TabsTrigger value="leaderboard" className="flex-1 text-sm font-medium">
-              Leaderboard
             </TabsTrigger>
             <TabsTrigger value="radar" className="flex-1 text-sm font-medium">
-              Radar
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="radar" className="h-full mt-0">
-            <CircleRadar />
           </TabsContent>
 
           <TabsContent value="leaderboard" className="h-full mt-0 p-4">
             <div className="text-center text-zinc-400 mt-8">
-              <p>Leaderboard coming soon...</p>
             </div>
           </TabsContent>
         </Tabs>

@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { CircleRadar } from "@/components/circle-radar"
 import { UrlPreview } from "@/components/url-preview"
 import { GifPicker } from "@/components/gif-picker"
 import { useGiphy } from "@/app/hooks/useGiphy"
@@ -130,7 +129,6 @@ export function CircleChatroom() {
   const [inputValue, setInputValue] = useState("")
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
   const [bookmarkedMessages, setBookmarkedMessages] = useState<string[]>([])
-  const [showRadarOnMobile, setShowRadarOnMobile] = useState(false)
   const [expirationTime, setExpirationTime] = useState(24 * 60 * 60) // 24 hours in seconds
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { gifs, searchGifs, isSearching } = useGiphy()
@@ -460,9 +458,7 @@ export function CircleChatroom() {
           variant="default"
           size="icon"
           className="rounded-full shadow-lg"
-          onClick={() => setShowRadarOnMobile(!showRadarOnMobile)}
         >
-          {showRadarOnMobile ? <X className="h-4 w-4" /> : <Users className="h-4 w-4" />}
         </Button>
       </div>
 
@@ -486,13 +482,10 @@ export function CircleChatroom() {
         </Sheet>
       </div>
 
-      {/* Radar Sidebar - Hidden on mobile unless toggled */}
       <div
         className={`w-80 border-l border-zinc-800/50 backdrop-blur-sm bg-zinc-900/80 overflow-hidden transition-all duration-300 ease-in-out ${
-          showRadarOnMobile ? "fixed inset-y-0 right-0 z-30 w-full sm:w-80" : "hidden md:block"
         }`}
       >
-        <CircleRadar />
       </div>
     </div>
   )

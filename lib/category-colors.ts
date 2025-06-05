@@ -86,8 +86,6 @@ export const categories: Record<string, Category> = {
     icon: Briefcase,
     emoji: "💼"
   },
-  "Trending": {
-    name: "Trending",
     color: "text-orange-400",
     bgColor: "bg-orange-400/10",
     borderColor: "border-orange-400/20",
@@ -105,5 +103,4 @@ export const categories: Record<string, Category> = {
 }
 
 export function getCategory(categoryName: string): Category {
-  return categories[categoryName] || categories["Trending"]
 } 

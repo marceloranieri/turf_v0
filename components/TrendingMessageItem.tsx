@@ -2,7 +2,6 @@
 
 import { Flame } from "lucide-react"
 
-export default function TrendingMessageItem({
   message,
   category,
   engagementScore,

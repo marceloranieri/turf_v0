@@ -198,10 +198,8 @@ export default function CircleChatroom() {
         </div>
       </main>
 
-      {/* Radar Sidebar (Desktop Only) */}
       <aside className="w-80 bg-white border-l border-gray-200 hidden lg:block">
         <div className="p-4">
-          <h2 className="text-lg font-semibold mb-4">Activity Radar</h2>
           {/* TODO: Implement radar tiles */}
         </div>
       </aside>

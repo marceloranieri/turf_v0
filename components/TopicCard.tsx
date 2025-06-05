@@ -6,14 +6,12 @@ export default function TopicCard({
   title,
   category,
   userCount,
-  isTrending = false,
   onJoin,
   onCopyLink,
 }: {
   title: string
   category: string
   userCount: number
-  isTrending?: boolean
   onJoin: () => void
   onCopyLink: () => void
 }) {
@@ -21,10 +19,8 @@ export default function TopicCard({
     <div className="bg-zinc-800 rounded-2xl p-4 hover:bg-zinc-700 transition-colors duration-150 shadow-sm">
       <div className="flex justify-between items-start">
         <h3 className="text-white text-lg font-semibold leading-snug">{title}</h3>
-        {isTrending && (
           <div className="flex items-center gap-1 text-orange-400 text-sm">
             <Flame size={16} />
-            Trending
           </div>
         )}
       </div>

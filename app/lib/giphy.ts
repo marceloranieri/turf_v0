@@ -51,7 +51,6 @@ export async function getRandomGif(tag: string): Promise<GiphySearchResult> {
   }
 }
 
-export async function getTrendingGifs(limit: number = 10): Promise<GiphySearchResult[]> {
   try {
     const response = await fetch(
       `${GIPHY_API_URL}/trending?api_key=${GIPHY_API_KEY}&limit=${limit}&rating=g`

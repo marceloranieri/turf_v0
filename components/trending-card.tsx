@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { MessageSquare, Heart } from "lucide-react"
 import { getCategory } from "@/lib/category-colors"
 
-type TrendingCardProps = {
   id: string
   title: string
   category: string
@@ -15,7 +14,6 @@ type TrendingCardProps = {
   index?: number
 }
 
-export function TrendingCard({ id, title, category, engagement_score, created_at, index = 0 }: TrendingCardProps) {
   const categoryInfo = getCategory(category)
   const Icon = categoryInfo.icon
 

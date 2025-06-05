@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { TrendingUp, Users } from 'lucide-react'
 
 interface Topic {
   id: string
@@ -25,7 +24,6 @@ export default function TopicCard({ topic }: { topic: any }) {
         <span className="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded-full">
           {topic.category || 'General'}
         </span>
-        <span>🔥 Trending</span>
       </div>
     </div>
   )

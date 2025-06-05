@@ -1,6 +1,5 @@
 "use client"
 
-import { LeftSidebar } from "@/components/left-sidebar"
 import { MessageSquare } from "lucide-react"
 
 export default function MessagesPage() {

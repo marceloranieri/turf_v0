@@ -1,19 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import DashboardLayout from "@/components/dashboard-layout"
 import { Calendar, Users, Flame, Copy, UserPlus, ExternalLink, Check } from "lucide-react"
-import { useSupabase } from "@/components/providers/SupabaseProvider"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { getCategory } from "@/lib/category-colors"
-import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
-import Timer from '@/components/Timer'
-import ErrorBoundary from '@/components/ErrorBoundary'
 
 type Topic = {
   id: string

@@ -1,4 +1,3 @@
-import ProtectedLayout from '@/components/protected-layout';
 
 export default function ChatroomLayout({
   children,

@@ -1,6 +1,4 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ParticleBackground } from "@/components/particle-background"
 
 export default function Home() {
   return (

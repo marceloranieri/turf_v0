@@ -1,12 +1,8 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { LeftSidebar } from "@/components/left-sidebar"
 import { Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useSupabase } from '@/components/providers/SupabaseProvider'
-import Timer from '@/components/Timer'
-import ErrorBoundary from '@/components/ErrorBoundary'
 import { useParams } from 'next/navigation'
 
 const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes

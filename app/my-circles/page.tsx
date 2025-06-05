@@ -1,7 +1,5 @@
 "use client"
 
-import { LeftSidebar } from "@/components/left-sidebar"
-import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 
 export default function MyCirclesPage() {

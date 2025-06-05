@@ -1,6 +1,5 @@
 "use client"
 
-import { LeftSidebar } from "@/components/left-sidebar"
 import { Bookmark } from "lucide-react"
 
 export default function BookmarksPage() {

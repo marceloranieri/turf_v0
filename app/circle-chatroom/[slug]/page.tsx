@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useAuth } from "@/context/auth-context"
-import { CircleLayout } from "@/components/circle-layout"
-import { CircleChatroom } from "@/components/circle-chatroom"
 
 type Topic = {
   id: string

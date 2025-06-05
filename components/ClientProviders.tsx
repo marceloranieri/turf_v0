@@ -17,12 +17,24 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          name: 'sb',
-          lifetime: 60 * 60 * 24 * 7,
-          domain: '.vercel.app',
-          path: '/',
-          sameSite: 'Lax',
-          secure: true,
+          get(name) {
+            if (typeof document === 'undefined') return null;
+            const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
+            return match ? match[2] : null;
+          },
+          set(name, value, options) {
+            if (typeof document === 'undefined') return;
+            const cookie = `${name}=${value}; path=${options?.path ?? '/'}${
+              options?.maxAge ? `; max-age=${options.maxAge}` : ''
+            }${options?.domain ? `; domain=${options.domain}` : ''}${
+              options?.sameSite ? `; samesite=${options.sameSite}` : ''
+            }${options?.secure ? '; secure' : ''}`;
+            document.cookie = cookie;
+          },
+          remove(name, options) {
+            if (typeof document === 'undefined') return;
+            document.cookie = `${name}=; Max-Age=0; path=${options?.path ?? '/'}`;
+          },
         },
       }
     )

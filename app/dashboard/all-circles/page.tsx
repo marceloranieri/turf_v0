@@ -1,80 +1,47 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/utils/supabase/client';
+import SidebarNav from '@/components/SidebarNav';
+import { Plus, Check } from 'lucide-react';
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const AllCirclesPage = () => {
+  const [topics, setTopics] = useState([]);
+  const [joinedTopics, setJoinedTopics] = useState(new Set());
+  const supabase = createClient();
 
-export default function AllCirclesPage() {
-  const [joined, setJoined] = useState([]);
-  const [others, setOthers] = useState([]);
-
-  const fetchAllCircles = async () => {
-    const userId = (await supabase.auth.getUser()).data.user.id;
-
-    const { data: joinedCircles } = await supabase
-      .from('circle_members')
-      .select('id, circles ( topic_id, topics ( title, description ) )')
-      .eq('user_id', userId);
-
-    const joinedTopicIds = joinedCircles.map((c) => c.circles.topic_id);
-
+  const loadTopics = async () => {
     const { data: allTopics } = await supabase
       .from('topics')
-      .select('*')
-      .not('id', 'in', `(${joinedTopicIds.join(',')})`);
-
-    setJoined(joinedCircles);
-    setOthers(allTopics);
-  };
-
-  const join = async (topicId: string) => {
-    await supabase.from('circle_members').insert({ topic_id: topicId });
-    fetchAllCircles();
-  };
-
-  const leave = async (id: string) => {
-    await supabase.from('circle_members').delete().eq('id', id);
-    fetchAllCircles();
-  };
-
+      .select('id, title, description');
+    
+    const { data: userCircles } = await supabase
+      .from('circle_members')
+      .select('circles(topic_id)');
+    
   useEffect(() => {
-    fetchAllCircles();
+    const loadAllTopics = async () => {
+      const { data } = await supabase.from('topics').select('id, title, description');
+      setTopics(data || []);
+    };
+    loadAllTopics();
   }, []);
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold mb-2">Circles you're in</h2>
-      <ul className="mb-6">
-        {joined.map(({ id, circles }) => (
-          <li key={id} className="mb-3">
-            <div className="flex justify-between">
-              <div>
-                <p className="font-bold">{circles.topics.title}</p>
-                <p className="text-sm text-zinc-400">{circles.topics.description}</p>
-              </div>
-              <button onClick={() => leave(id)}>Leave</button>
+    <div className="flex min-h-screen">
+      <SidebarNav />
+      <main className="flex-1 p-6">
+        <h2 className="text-xl font-bold mb-4">All Circles</h2>
+        <div className="space-y-4">
+          {topics.map((topic: any) => (
+            <div key={topic.id} className="border rounded p-4">
+              <h3 className="font-semibold">{topic.title}</h3>
+              <p className="text-sm text-gray-500">{topic.description}</p>
             </div>
-          </li>
-        ))}
-      </ul>
-
-      <h2 className="text-xl font-semibold mb-2">Other Circles</h2>
-      <ul>
-        {others.map((circle) => (
-          <li key={circle.id} className="mb-3">
-            <div className="flex justify-between">
-              <div>
-                <p className="font-bold">{circle.title}</p>
-                <p className="text-sm text-zinc-400">{circle.description}</p>
-              </div>
-              <button onClick={() => join(circle.id)}>Join</button>
-            </div>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
+      </main>
     </div>
   );
-} 
+};
+
+export default AllCirclesPage; 

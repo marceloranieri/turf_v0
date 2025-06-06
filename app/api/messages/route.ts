@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { checkToxicity } from "@/app/lib/moderation";
+import { checkContent } from "@/lib/moderation";
 
 // Validate environment variables
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
@@ -38,9 +38,9 @@ export async function POST(req: Request) {
     }, { status: 403 })
   }
 
-  // Check message toxicity
-  const isClean = await checkToxicity(message)
-  if (!isClean) {
+  // Check message content
+  const { safe } = await checkContent(message)
+  if (!safe) {
     return Response.json({ 
       error: "Message blocked due to inappropriate content" 
     }, { status: 400 })

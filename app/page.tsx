@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 
 export default function Home() {
   return (
@@ -20,19 +19,18 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            asChild
-            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-6 px-8 rounded-lg transition-all hover:scale-[1.02]"
+          <Link
+            href="/register"
+            className="inline-flex items-center justify-center bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-6 px-8 rounded-lg transition-all hover:scale-[1.02] font-medium"
           >
-            <Link href="/register">Get Started</Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            className="bg-zinc-800/80 border-zinc-700/50 text-white hover:bg-zinc-800 py-6 px-8 rounded-lg"
+            Get Started
+          </Link>
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center bg-zinc-800/80 border border-zinc-700/50 text-white hover:bg-zinc-800 py-6 px-8 rounded-lg font-medium transition-colors"
           >
-            <Link href="/login">Sign In</Link>
-          </Button>
+            Sign In
+          </Link>
         </div>
       </div>
     </div>

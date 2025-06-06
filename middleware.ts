@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 // Required env vars for Supabase SSR + app core
 const requiredEnvVars = [
@@ -17,7 +18,21 @@ const requiredEnvVars = [
   'CRON_SECRET',
 ];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req, res })
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Redirect authenticated users away from auth pages
+  if (user && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/register')) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
+  // Redirect unauthenticated users to login
+  if (!user && req.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', req.url))
+  }
+
   const missingVars = requiredEnvVars.filter((key) => !process.env[key]);
 
   if (missingVars.length > 0) {
@@ -35,10 +50,9 @@ export function middleware(req: NextRequest) {
     );
   }
 
-  // Everything looks good, continue
-  return NextResponse.next();
+  return res
 }
 
 export const config = {
-  matcher: ['/', '/((?!_next|favicon.ico|api/public).*)'],
-};
+  matcher: ['/dashboard/:path*', '/login', '/register']
+}

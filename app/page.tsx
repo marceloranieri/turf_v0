@@ -1,10 +1,9 @@
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default function Home() {
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-black p-4">
-      <ParticleBackground />
-
       <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none z-10"></div>
 
       <div className="z-20 text-center max-w-3xl">

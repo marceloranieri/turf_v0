@@ -24,13 +24,13 @@ export async function middleware(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Redirect authenticated users away from auth pages
-  if (user && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/register')) {
+  if (user && req.nextUrl.pathname.startsWith('/auth')) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
   // Redirect unauthenticated users to login
   if (!user && req.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', req.url))
+    return NextResponse.redirect(new URL('/auth/login', req.url))
   }
 
   const missingVars = requiredEnvVars.filter((key) => !process.env[key]);
@@ -54,5 +54,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/register']
+  matcher: ['/dashboard/:path*', '/auth/:path*']
 }
